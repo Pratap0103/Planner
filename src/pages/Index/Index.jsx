@@ -1,0 +1,361 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { Search, Plus, Filter, Edit, Trash2 } from 'lucide-react';
+import DataTable from '../../components/DataTable';
+import ModalAlert from '../../components/ModalAlert';
+import ModalForm from '../../components/ModalForm';
+import { getTasks, saveTasks } from '../../utils/storageManager';
+
+export default function Index() {
+  const [tasks, setTasks] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(100);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+
+  // Custom categories state
+  const [customCategories, setCustomCategories] = useState(() => {
+    const saved = localStorage.getItem('index_custom_categories');
+    return saved ? JSON.parse(saved) : ['Work', 'Meeting', 'Call', 'Personal', 'Review', 'Break', 'Health'];
+  });
+
+  const [customCategoryText, setCustomCategoryText] = useState('');
+
+  const [alertConfig, setAlertConfig] = useState({ isOpen: false, type: 'success', title: '', message: '', onConfirm: () => { } });
+
+  const durationOptions = ['Morning', 'Afternoon', 'Evening', 'Night'];
+  const priorityOptions = ['Low', 'Medium', 'High'];
+
+  const [formData, setFormData] = useState({
+    description: '',
+    duration: 'Morning',
+    category: 'Work',
+    priority: ''
+  });
+
+  const headers = ['Action', 'Task Description', 'Duration', 'Category', 'Priority'];
+
+  useEffect(() => {
+    setTasks(getTasks());
+  }, []);
+
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(t => {
+      const q = searchQuery.toLowerCase();
+      return (
+        t.description?.toLowerCase().includes(q) ||
+        t.category?.toLowerCase().includes(q) ||
+        t.duration?.toLowerCase().includes(q) ||
+        (t.priority && t.priority.toLowerCase().includes(q))
+      );
+    });
+  }, [tasks, searchQuery]);
+
+  const sortedTasks = useMemo(() => [...filteredTasks].reverse(), [filteredTasks]);
+
+  const totalPages = Math.ceil(sortedTasks.length / itemsPerPage);
+  const paginatedTasks = sortedTasks.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const handleAdd = () => {
+    setEditingId(null);
+    setFormData({
+      description: '',
+      duration: 'Morning',
+      category: customCategories[0] || 'Work',
+      priority: ''
+    });
+    setCustomCategoryText('');
+    setShowModal(true);
+  };
+
+  const handleEdit = (task) => {
+    setEditingId(task.id);
+    const isCustomCat = !customCategories.includes(task.category);
+    setFormData({
+      description: task.description || '',
+      duration: task.duration || 'Morning',
+      category: isCustomCat ? 'custom' : (task.category || 'Work'),
+      priority: task.priority || ''
+    });
+    setCustomCategoryText(isCustomCat ? task.category : '');
+    setShowModal(true);
+  };
+
+  const showAlert = (type, title, message, onConfirm = () => { }) => {
+    setAlertConfig({ isOpen: true, type, title, message, onConfirm });
+  };
+
+  const handleDelete = (id) => {
+    showAlert('confirm', 'Delete Task?', 'Are you sure you want to delete this task?', () => {
+      const updated = tasks.filter(t => t.id !== id);
+      saveTasks(updated);
+      setTasks(updated);
+      showAlert('success', 'Deleted!', 'Task has been successfully removed.');
+    });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    let finalCategory = formData.category;
+    if (formData.category === 'custom') {
+      const cleanCat = customCategoryText.trim();
+      if (!cleanCat) {
+        showAlert('error', 'Validation Error', 'Please enter a category name.');
+        return;
+      }
+      finalCategory = cleanCat;
+
+      // Add to dropdown list if it's not already there
+      if (!customCategories.includes(cleanCat)) {
+        const updatedCats = [...customCategories, cleanCat];
+        setCustomCategories(updatedCats);
+        localStorage.setItem('index_custom_categories', JSON.stringify(updatedCats));
+      }
+    }
+
+    const payload = {
+      description: formData.description,
+      duration: formData.duration,
+      category: finalCategory,
+      priority: formData.priority
+    };
+
+    if (editingId) {
+      const updated = tasks.map(t => t.id === editingId ? { ...t, ...payload } : t);
+      saveTasks(updated);
+      setTasks(updated);
+      showAlert('success', 'Updated!', 'Task has been modified successfully.');
+    } else {
+      const newTask = {
+        ...payload,
+        id: `TSK-${Date.now()}`,
+        status: 'Pending',
+        timestamp: new Date().toISOString()
+      };
+      const updated = [...tasks, newTask];
+      saveTasks(updated);
+      setTasks(updated);
+      showAlert('success', 'Created!', 'New task has been added successfully.');
+    }
+    setShowModal(false);
+  };
+
+  const renderRow = (item) => (
+    <tr key={item.id} className="hover:bg-gray-50 transition-colors text-center text-sm border-b border-gray-100">
+      <td className="px-4 py-2 whitespace-nowrap">
+        <div className="flex items-center justify-center gap-2">
+          <button onClick={() => handleEdit(item)} className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+            <Edit size={14} />
+          </button>
+          <button onClick={() => handleDelete(item.id)} className="p-1.5 bg-red-50 text-red-500 rounded-lg">
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </td>
+      <td className="px-4 py-2 text-gray-900 font-medium text-center text-[11px] md:text-xs max-w-[300px] truncate" title={item.description}>
+        {item.description}
+      </td>
+      <td className="px-4 py-2 text-gray-700 whitespace-nowrap text-[11px] md:text-xs">
+        {item.duration}
+      </td>
+      <td className="px-4 py-2 text-gray-700 whitespace-nowrap text-[11px] md:text-xs">
+        <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-md text-[10px] font-semibold font-bold">
+          {item.category}
+        </span>
+      </td>
+      <td className="px-4 py-2 text-gray-700 whitespace-nowrap text-[11px] md:text-xs">
+        {item.priority === 'Frog' ? (
+          <span className="text-base select-none" title="Frog Task">🐸</span>
+        ) : (
+          ""
+        )}
+      </td>
+    </tr>
+  );
+
+  const renderCard = (item) => (
+    <div key={item.id} className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm space-y-3 text-left">
+      <div className="flex justify-between items-start border-b border-gray-100 pb-2">
+        <div className="flex gap-2 flex-wrap">
+          <span className="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded uppercase tracking-wider">{item.category}</span>
+          <span className="text-[9px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded uppercase tracking-wider">{item.duration}</span>
+          {item.priority === 'Frog' && (
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border bg-emerald-50 border-emerald-250 text-emerald-700 uppercase tracking-wider">🐸 Frog</span>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <button onClick={() => handleEdit(item)} className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+            <Edit size={14} />
+          </button>
+          <button onClick={() => handleDelete(item.id)} className="p-1.5 bg-red-50 text-red-500 rounded-lg">
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </div>
+      <p className="text-sm font-medium text-gray-700 leading-tight">{item.description}</p>
+    </div>
+  );
+
+  return (
+    <div className="p-0 sm:p-2 md:p-6 space-y-2 md:space-y-6 flex flex-col h-full min-h-0">
+      {/* Header with Filters */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-2 lg:gap-4 w-full">
+        <div className="flex flex-col lg:flex-row w-full gap-2 lg:gap-3 items-center">
+
+          {/* Top Row for Mobile: Filter + Add */}
+          <div className="flex items-center gap-2 w-full lg:w-auto">
+
+            {/* Mobile Filter Button */}
+            <button
+              onClick={() => setShowMobileFilters(!showMobileFilters)}
+              className={`lg:hidden flex items-center justify-center rounded-lg shadow-sm h-[32px] w-[32px] flex-shrink-0 transition ${showMobileFilters ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+            >
+              <Filter size={14} />
+            </button>
+
+            {/* Mobile Add Button */}
+            <button
+              onClick={handleAdd}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center justify-center lg:hidden h-[32px] w-[32px] flex-shrink-0 shadow-sm transition active:scale-95"
+            >
+              <Plus size={16} />
+            </button>
+          </div>
+
+          {/* Search Bar (Toggleable on mobile) */}
+          <div className={`${showMobileFilters ? 'block' : 'hidden'} lg:block w-full lg:flex-[1.5] relative animate-in slide-in-from-top-2 duration-200`}>
+            <Search className="absolute left-2.5 top-[9px] lg:top-[11px] text-gray-400" size={14} />
+            <input
+              type="text"
+              placeholder="Search Tasks..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-white border border-gray-300 rounded-lg lg:rounded pl-8 pr-2 py-1.5 focus:outline-none focus:border-sky-500 text-base md:text-sm h-[32px] md:h-[38px] shadow-sm"
+            />
+          </div>
+        </div>
+
+        {/* Desktop Add Button */}
+        <button
+          onClick={handleAdd}
+          className="hidden lg:flex bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 h-[38px] rounded-lg font-semibold items-center justify-center gap-2 transition shadow-sm w-full lg:w-auto flex-shrink-0 active:scale-95 mt-2 lg:mt-0"
+        >
+          <Plus size={16} /> Add Task
+        </button>
+      </div>
+
+
+
+      {/* Main Content Area */}
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col pt-1 mt-2 flex-1 min-h-0 overflow-hidden">
+        <DataTable
+          headers={headers}
+          data={paginatedTasks}
+          renderRow={renderRow}
+          renderCard={renderCard}
+          minWidth="800px"
+          currentPage={currentPage}
+          totalPages={totalPages}
+          itemsPerPage={itemsPerPage}
+          totalResults={filteredTasks.length}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={(val) => { setItemsPerPage(val); setCurrentPage(1); }}
+        />
+      </div>
+
+      <ModalAlert
+        {...alertConfig}
+        onClose={() => setAlertConfig({ ...alertConfig, isOpen: false })}
+      />
+
+      <ModalForm
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={editingId ? 'Edit Task' : 'Add New Task'}
+        onSubmit={handleSubmit}
+        submitText={editingId ? 'Update' : 'Save'}
+      >
+        <div className="space-y-4 text-left">
+
+          <div className="space-y-1">
+            <label className="block text-[10px] md:text-[12px] text-gray-700 uppercase tracking-tight font-bold">Task Description *</label>
+            <textarea
+              required
+              rows={3}
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="w-full border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-[11px] md:text-[13px]"
+              placeholder="Enter task details..."
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+
+            {/* Duration select */}
+            <div className="space-y-1">
+              <label className="block text-[10px] md:text-[12px] text-gray-700 uppercase tracking-tight font-bold">Duration *</label>
+              <select
+                required
+                value={formData.duration}
+                onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                className="w-full border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-[11px] md:text-[13px] h-[30px] md:h-[34px] bg-white font-medium"
+              >
+                {durationOptions.map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Category select */}
+            <div className="space-y-1">
+              <label className="block text-[10px] md:text-[12px] text-gray-700 uppercase tracking-tight font-bold">Category *</label>
+              <select
+                required
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-[11px] md:text-[13px] h-[30px] md:h-[34px] bg-white font-medium"
+              >
+                {customCategories.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+                <option value="custom">+ Add Custom Category</option>
+              </select>
+            </div>
+
+            {/* Frog selector */}
+            <div className="space-y-1">
+              <label className="block text-[10px] md:text-[12px] text-gray-700 uppercase tracking-tight font-bold">Frog Task?</label>
+              <button
+                type="button"
+                onClick={() => setFormData({ ...formData, priority: formData.priority === 'Frog' ? '' : 'Frog' })}
+                className={`w-full border rounded px-2.5 py-1.5 text-[11px] md:text-[13px] h-[30px] md:h-[34px] font-bold transition-all flex items-center justify-center gap-1.5 shadow-sm ${formData.priority === 'Frog'
+                    ? 'bg-emerald-50 border-emerald-355 text-emerald-700'
+                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                  }`}
+              >
+                {formData.priority === 'Frog' ? '🐸 Frog!' : '🐸 Mark Frog'}
+              </button>
+            </div>
+
+          </div>
+
+          {formData.category === 'custom' && (
+            <div className="space-y-1 animate-in slide-in-from-top-2 duration-150">
+              <label className="block text-[10px] md:text-[12px] text-gray-700 uppercase tracking-tight font-bold">Custom Category Name *</label>
+              <input
+                required
+                type="text"
+                value={customCategoryText}
+                onChange={(e) => setCustomCategoryText(e.target.value)}
+                placeholder="Enter new category name..."
+                className="w-full border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-[11px] md:text-[13px] h-[30px] md:h-[34px]"
+              />
+            </div>
+          )}
+        </div>
+      </ModalForm>
+    </div>
+  );
+}
