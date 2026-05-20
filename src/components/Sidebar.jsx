@@ -14,7 +14,8 @@ import {
   FolderClosed,
   ChevronLeft,
   ChevronRight,
-  HelpCircle
+  HelpCircle,
+  CalendarClock
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
@@ -30,6 +31,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
   const adminMenuItems = [
     { path: '/dashboard', icon: BarChart2, label: 'Dashboard' },
     { path: '/planner', icon: Calendar, label: 'Today' },
+    { path: '/upcoming-planner', icon: CalendarClock, label: 'Upcoming Planner' },
     { path: '/all-tasks', icon: ListTodo, label: 'All Tasks' },
     { path: '/my-projects', icon: FolderClosed, label: 'My Projects' },
     { path: '/calendar', icon: CalendarDays, label: 'Calendar' },
@@ -42,6 +44,7 @@ const Sidebar = ({ isOpen, onClose, isCollapsed, setIsCollapsed }) => {
   const employeeMenuItems = [
     { path: '/dashboard', icon: BarChart2, label: 'Dashboard' },
     { path: '/planner', icon: Calendar, label: 'Planner' },
+    { path: '/upcoming-planner', icon: CalendarClock, label: 'Upcoming Planner' },
     { path: '/all-tasks', icon: ListTodo, label: 'All Tasks' },
     { path: '/my-projects', icon: FolderClosed, label: 'My Projects' },
     { path: '/calendar', icon: CalendarDays, label: 'Calendar' },

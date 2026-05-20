@@ -127,9 +127,9 @@ const Myprojecttask = () => {
   const completedCount = tasks.filter((t) => t.isCompleted).length;
 
   return (
-    <div className="p-4 md:p-6 space-y-5 flex flex-col h-full min-h-0 bg-white">
+    <div className="p-4 md:p-6 flex flex-col h-full min-h-0 bg-white gap-4">
       {/* Header */}
-      <div className="pb-2.5 flex items-center gap-3.5 bg-white border-b border-gray-100">
+      <div className="pb-2.5 flex items-center gap-3.5 bg-white border-b border-gray-100 flex-shrink-0">
         <button
           onClick={() => navigate('/my-projects')}
           className="p-1.5 hover:bg-slate-100 rounded-lg text-gray-500 hover:text-indigo-650 transition active:scale-95 border border-gray-200 shadow-sm"
@@ -143,11 +143,11 @@ const Myprojecttask = () => {
         </div>
       </div>
 
-      {/* Lined Notebook Paper Card */}
-      <div className="flex-1 bg-white border border-gray-250/90 rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.03)] max-w-2xl flex flex-col overflow-hidden relative">
+      {/* Lined Notebook Paper Card — fills full width & remaining height */}
+      <div className="flex-1 bg-white border border-gray-200 rounded-2xl shadow-sm w-full flex flex-col overflow-hidden min-h-0">
         
         {/* Paper top binder decoration */}
-        <div className="h-6 bg-slate-50 border-b border-gray-200/80 flex items-center px-4 gap-1.5 select-none">
+        <div className="h-7 bg-slate-50 border-b border-gray-200 flex items-center px-4 gap-1.5 select-none flex-shrink-0">
           <div className="w-2 h-2 rounded-full bg-gray-300"></div>
           <div className="w-2 h-2 rounded-full bg-gray-300"></div>
           <div className="w-2 h-2 rounded-full bg-gray-300"></div>
@@ -157,29 +157,48 @@ const Myprojecttask = () => {
         </div>
 
         <div className="flex-1 relative flex flex-col min-h-0">
-          {/* Vertical Red Margin Line (matches physical legal pad layout) */}
+          {/* Vertical Red Margin Line */}
           <div className="absolute left-[44px] top-0 bottom-0 border-l-[1.5px] border-red-300/60 pointer-events-none z-10"></div>
 
-          {/* Ruled lines sheet */}
+          {/* Ruled lines scrollable area */}
           <div 
-            className="flex-1 overflow-y-auto pr-1"
+            className="flex-1 overflow-y-auto"
             style={{ 
-              backgroundImage: 'linear-gradient(rgba(226, 232, 240, 0.7) 1px, transparent 1px)',
+              backgroundImage: 'linear-gradient(rgba(226, 232, 240, 0.6) 1px, transparent 1px)',
               backgroundSize: '100% 40px',
             }}
           >
+            {/* New Task Input Line — pinned at TOP */}
+            <div className="flex items-center h-[40px] relative group hover:bg-slate-50/50 transition-colors duration-150 border-b border-indigo-100/60">
+              <div className="w-[44px] flex items-center justify-center flex-shrink-0 z-20 text-indigo-400">
+                <Plus size={16} />
+              </div>
+              <div className="flex-1 flex items-center pl-3.5 pr-2 h-full z-20 min-w-0">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={newTaskDesc}
+                  onChange={(e) => setNewTaskDesc(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleCreateTaskInline(); }}
+                  onBlur={handleCreateTaskInline}
+                  placeholder="Type a new task here and press Enter..."
+                  className="flex-1 bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-sm font-semibold text-gray-400 placeholder-gray-300 p-0 w-full h-[40px] leading-[40px]"
+                />
+              </div>
+            </div>
+
             {sortedTasks.map((task) => (
               <div
                 key={task.id}
-                className={`flex items-center h-[40px] relative group hover:bg-slate-50/40 transition-colors duration-150`}
+                className="flex items-center h-[40px] relative group hover:bg-slate-50/50 transition-colors duration-150"
               >
-                {/* Checkbox (Left of margin line) */}
+                {/* Checkbox */}
                 <div className="w-[44px] flex items-center justify-center flex-shrink-0 z-20">
                   <button
                     type="button"
                     onClick={() => handleToggleTask(task.id)}
-                    className={`focus:outline-none flex-shrink-0 transition-all duration-200 active:scale-90 ${
-                      task.isCompleted ? 'text-indigo-600' : 'text-gray-450 hover:text-indigo-650'
+                    className={`focus:outline-none transition-all duration-200 active:scale-90 ${
+                      task.isCompleted ? 'text-indigo-600' : 'text-gray-400 hover:text-indigo-600'
                     }`}
                   >
                     {task.isCompleted ? (
@@ -190,18 +209,14 @@ const Myprojecttask = () => {
                   </button>
                 </div>
                 
-                {/* Editable Task Description input (Right of margin line) */}
-                <div className="flex-1 flex items-center pl-3.5 pr-2 h-full z-20 min-w-0">
+                {/* Editable Task Description */}
+                <div className="flex-1 flex items-center pl-3.5 pr-10 h-full z-20 min-w-0">
                   <input
                     type="text"
                     value={task.description}
                     onChange={(e) => handleUpdateTaskField(task.id, 'description', e.target.value)}
                     onBlur={() => handlePersistTaskChange(task.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.target.blur();
-                      }
-                    }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
                     className={`flex-1 bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-sm font-semibold p-0 w-full h-[40px] leading-[40px] ${
                       task.isCompleted ? 'line-through text-gray-400 font-normal decoration-gray-300' : 'text-gray-800'
                     }`}
@@ -212,7 +227,7 @@ const Myprojecttask = () => {
                 <button
                   type="button"
                   onClick={() => handleDeleteTask(task.id)}
-                  className="absolute right-2 text-gray-400 hover:text-red-500 p-1.5 rounded hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all duration-200 flex-shrink-0 z-30"
+                  className="absolute right-3 text-gray-400 hover:text-red-500 p-1.5 rounded hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all duration-200 z-30"
                   title="Delete Task"
                 >
                   <Trash2 size={14} />
@@ -220,28 +235,7 @@ const Myprojecttask = () => {
               </div>
             ))}
             
-            {/* Notepad Input Line (Direct Typing) */}
-            <div className="flex items-center h-[40px] relative group hover:bg-slate-50/40 transition-colors duration-150">
-              <div className="w-[44px] flex items-center justify-center flex-shrink-0 z-20 text-gray-300">
-                <Plus size={16} />
-              </div>
-              <div className="flex-1 flex items-center pl-3.5 pr-2 h-full z-20 min-w-0">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={newTaskDesc}
-                  onChange={(e) => setNewTaskDesc(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleCreateTaskInline();
-                    }
-                  }}
-                  onBlur={handleCreateTaskInline}
-                  placeholder="Type a new task here and press Enter..."
-                  className="flex-1 bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-sm font-semibold text-gray-400 placeholder-gray-300 p-0 w-full h-[40px] leading-[40px]"
-                />
-              </div>
-            </div>
+
           </div>
         </div>
       </div>

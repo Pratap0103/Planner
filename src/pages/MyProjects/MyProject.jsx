@@ -80,8 +80,8 @@ const MyProject = () => {
   return (
     <div className="p-4 md:p-6 space-y-5 flex flex-col h-full min-h-0 bg-white">
 
-      {/* Creation form */}
-      <div className="bg-gradient-to-r from-slate-50 to-indigo-50/20 p-4 rounded-xl border border-gray-200/80 shadow-sm max-w-xl">
+      {/* Creation form — full width */}
+      <div className="bg-gradient-to-r from-slate-50 to-indigo-50/20 p-4 rounded-xl border border-gray-200 shadow-sm flex-shrink-0">
         <form onSubmit={handleCreateProject} className="flex gap-2.5 items-center">
           <div className="relative flex-1">
             <input
@@ -106,7 +106,7 @@ const MyProject = () => {
       {/* Projects Grid List */}
       <div className="flex-1 overflow-y-auto pr-1">
         {projects.length === 0 ? (
-          <div className="text-center py-16 bg-gray-50/50 rounded-2xl border border-gray-100 max-w-xl">
+          <div className="text-center py-16 bg-gray-50/50 rounded-2xl border border-gray-100 w-full">
             <FolderClosed className="mx-auto text-gray-300 mb-3" size={44} />
             <p className="text-sm font-semibold text-gray-500">No projects created yet</p>
             <p className="text-xs text-gray-400 mt-1">Create your first project above to start tracking tasks</p>

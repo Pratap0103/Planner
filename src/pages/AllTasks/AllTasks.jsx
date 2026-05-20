@@ -17,6 +17,8 @@ export default function AllTasks() {
   const [filterDuration, setFilterDuration] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterFrog, setFilterFrog] = useState(''); // "" or "Frog"
+  const [filterFromDate, setFilterFromDate] = useState('');
+  const [filterToDate, setFilterToDate] = useState('');
 
   // Pagination states (showing 100 rows by default)
   const [pendingPage, setPendingPage] = useState(1);
@@ -139,6 +141,10 @@ export default function AllTasks() {
         // Frog filter
         if (filterFrog === 'Frog' && item.priority !== 'Frog') return false;
 
+        // Date range filter
+        if (filterFromDate && item.dateInstance < filterFromDate) return false;
+        if (filterToDate   && item.dateInstance > filterToDate)   return false;
+
         return true;
       })
       .sort((a, b) => {
@@ -149,7 +155,7 @@ export default function AllTasks() {
         if (a.priority !== 'Frog' && b.priority === 'Frog') return 1;
         return 0;
       });
-  }, [taskInstances, searchQuery, filterDuration, filterCategory, filterFrog]);
+  }, [taskInstances, searchQuery, filterDuration, filterCategory, filterFrog, filterFromDate, filterToDate]);
 
   // Filter & Search history (completed) tasks
   const historyTasks = useMemo(() => {
@@ -173,6 +179,10 @@ export default function AllTasks() {
         // Frog filter
         if (filterFrog === 'Frog' && item.priority !== 'Frog') return false;
 
+        // Date range filter
+        if (filterFromDate && item.dateInstance < filterFromDate) return false;
+        if (filterToDate   && item.dateInstance > filterToDate)   return false;
+
         return true;
       })
       .sort((a, b) => {
@@ -183,7 +193,7 @@ export default function AllTasks() {
         if (a.priority !== 'Frog' && b.priority === 'Frog') return 1;
         return 0;
       });
-  }, [taskInstances, searchQuery, filterDuration, filterCategory, filterFrog]);
+  }, [taskInstances, searchQuery, filterDuration, filterCategory, filterFrog, filterFromDate, filterToDate]);
 
   // Paginated lists
   const paginatedPending = useMemo(() => {
@@ -204,7 +214,7 @@ export default function AllTasks() {
   useEffect(() => {
     setPendingPage(1);
     setHistoryPage(1);
-  }, [searchQuery, filterDuration, filterCategory, filterFrog]);
+  }, [searchQuery, filterDuration, filterCategory, filterFrog, filterFromDate, filterToDate]);
 
   // Table Headers
   const tableHeaders = ['Action', 'Date', 'Task Description', 'Time', 'Category', 'Status'];
@@ -457,6 +467,24 @@ export default function AllTasks() {
               />
             </div>
 
+            {/* From – To Date inline pill */}
+            <div className="flex items-center h-[32px] border border-gray-300 rounded-xl overflow-hidden bg-white divide-x divide-gray-300">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide px-2 whitespace-nowrap bg-gray-50">From</span>
+              <input
+                type="date"
+                value={filterFromDate}
+                onChange={(e) => setFilterFromDate(e.target.value)}
+                className="text-xs px-2 h-full bg-white text-gray-700 font-semibold focus:outline-none"
+              />
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide px-2 whitespace-nowrap bg-gray-50">To</span>
+              <input
+                type="date"
+                value={filterToDate}
+                onChange={(e) => setFilterToDate(e.target.value)}
+                className="text-xs px-2 h-full bg-white text-gray-700 font-semibold focus:outline-none"
+              />
+            </div>
+
             {/* Time Selector */}
             <select
               value={filterDuration}
@@ -495,13 +523,15 @@ export default function AllTasks() {
             </button>
 
             {/* Clear Button */}
-            {(searchQuery || filterDuration || filterCategory || filterFrog) && (
+            {(searchQuery || filterDuration || filterCategory || filterFrog || filterFromDate || filterToDate) && (
               <button
                 onClick={() => {
                   setSearchQuery('');
                   setFilterDuration('');
                   setFilterCategory('');
                   setFilterFrog('');
+                  setFilterFromDate('');
+                  setFilterToDate('');
                 }}
                 className="text-xs text-red-500 hover:text-red-700 font-bold hover:underline py-1 px-2"
               >
