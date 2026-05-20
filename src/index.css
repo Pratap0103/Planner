@@ -5,15 +5,17 @@
 @tailwind utilities;
 
 :root {
-  --primary-indigo: #4f46e5;
-  --primary-light: #f5f7ff;
+  --primary: #16a34a;        /* green-600 */
+  --primary-light: #f0fdf4;  /* green-50 */
+  --accent: #eab308;         /* yellow-500 */
+  --accent-light: #fefce8;   /* yellow-50 */
   --bg-white: #ffffff;
-  --border-light: #f1f5f9;
+  --border-light: #dcfce7;   /* green-100 */
 }
 
 body {
   background-color: var(--bg-white);
-  color: #334155;
+  color: #1a2e1a;
   font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
   font-size: 12px;
   min-height: 100vh;
@@ -96,3 +98,69 @@ table th, table td {
 .animate-pulse-subtle {
   animation: pulse-subtle 2.5s ease-in-out infinite;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   GLOBAL GREEN/YELLOW/WHITE THEME OVERRIDES
+   These remap indigo & sky/blue primary colors → green/yellow
+   across all pages WITHOUT touching Login.jsx
+   ──────────────────────────────────────────────────────────── */
+
+/* Inputs / focus rings */
+input:focus, select:focus, textarea:focus {
+  --tw-ring-color: rgb(22 163 74 / 0.25) !important; /* green-600/25 */
+  border-color: #16a34a !important;
+}
+
+/* Primary action buttons (bg-indigo-600 / bg-sky-600 / bg-blue-600) */
+.bg-indigo-600 { background-color: #16a34a !important; }
+.bg-indigo-700 { background-color: #15803d !important; }
+.bg-indigo-500 { background-color: #22c55e !important; }
+.hover\:bg-indigo-600:hover { background-color: #16a34a !important; }
+.hover\:bg-indigo-700:hover { background-color: #15803d !important; }
+.hover\:bg-indigo-500:hover { background-color: #22c55e !important; }
+.from-indigo-500 { --tw-gradient-from: #22c55e !important; }
+.from-indigo-600 { --tw-gradient-from: #16a34a !important; }
+.to-indigo-600  { --tw-gradient-to:   #15803d !important; }
+.to-indigo-700  { --tw-gradient-to:   #166534 !important; }
+
+/* Indigo text */
+.text-indigo-600 { color: #16a34a !important; }
+.text-indigo-700 { color: #15803d !important; }
+.text-indigo-500 { color: #22c55e !important; }
+.hover\:text-indigo-600:hover { color: #16a34a !important; }
+.hover\:text-indigo-700:hover { color: #15803d !important; }
+
+/* Indigo borders */
+.border-indigo-600 { border-color: #16a34a !important; }
+.border-indigo-500 { border-color: #22c55e !important; }
+.border-indigo-300 { border-color: #86efac !important; }
+.border-indigo-200 { border-color: #bbf7d0 !important; }
+.border-indigo-100 { border-color: #dcfce7 !important; }
+
+/* Indigo backgrounds (light) */
+.bg-indigo-50   { background-color: #f0fdf4 !important; }
+.bg-indigo-100  { background-color: #dcfce7 !important; }
+.hover\:bg-indigo-50:hover  { background-color: #f0fdf4 !important; }
+.hover\:bg-indigo-100:hover { background-color: #dcfce7 !important; }
+
+/* Sky/blue overrides → green */
+.bg-sky-600    { background-color: #16a34a !important; }
+.bg-sky-500    { background-color: #22c55e !important; }
+.bg-blue-600   { background-color: #16a34a !important; }
+.bg-blue-500   { background-color: #22c55e !important; }
+.text-sky-600  { color: #16a34a !important; }
+.text-sky-700  { color: #15803d !important; }
+.text-blue-600 { color: #16a34a !important; }
+.border-sky-500  { border-color: #22c55e !important; }
+.border-blue-500 { border-color: #22c55e !important; }
+.from-sky-500  { --tw-gradient-from: #22c55e !important; }
+.to-blue-600   { --tw-gradient-to:   #15803d !important; }
+
+/* Active / active border highlights */
+.border-l-indigo-600 { border-left-color: #16a34a !important; }
+.border-l-4.border-l-indigo-600 { border-left-color: #16a34a !important; }
+
+/* Focus ring colors */
+.focus\:ring-indigo-500:focus { --tw-ring-color: rgb(22 163 74 / 0.4) !important; }
+.focus\:border-indigo-500:focus { border-color: #16a34a !important; }
+

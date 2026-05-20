@@ -4,6 +4,7 @@ import DataTable from '../../components/DataTable';
 import ModalForm from '../../components/ModalForm';
 import ModalAlert from '../../components/ModalAlert';
 import { getTasks, saveTasks, getCompletions, saveCompletions } from '../../utils/storageManager';
+import { getCategoryEmoji } from '../../utils/helpers';
 
 const formatDateLocal = (date) => {
   const yyyy = date.getFullYear();
@@ -30,7 +31,7 @@ export default function Planner() {
   const [alertConfig, setAlertConfig] = useState({ isOpen: false, type: 'success', title: '', message: '', onConfirm: () => {} });
 
   // Custom categories list loaded from localStorage if it exists
-  const [customCategories] = useState(() => {
+  const [customCategories, setCustomCategories] = useState(() => {
     const saved = localStorage.getItem('index_custom_categories');
     return saved ? JSON.parse(saved) : ['Work', 'Meeting', 'Call', 'Personal', 'Review', 'Break', 'Health'];
   });
@@ -91,7 +92,7 @@ export default function Planner() {
     return dates;
   }, [weekOffset]);
 
-  const headers = ['Action', 'Status', 'Remarks', 'Duration', 'Task Description', 'Category', 'Priority'];
+  const headers = ['Action', 'Status', 'Remarks', 'Time', 'Task Description', 'Category'];
 
   // Map master tasks to include date-specific completion status & priority
   const filteredTasks = useMemo(() => {
@@ -291,6 +292,30 @@ export default function Planner() {
     }
   };
 
+  const handleAddCategoryInline = (idx) => {
+    const text = (tasksList[idx].newCategoryText || '').trim();
+    if (!text) return;
+    if (customCategories.includes(text)) {
+      handleFieldChange(idx, 'category', text);
+      handleFieldChange(idx, 'isCreatingCategory', false);
+      return;
+    }
+    const updated = [...customCategories, text];
+    localStorage.setItem('index_custom_categories', JSON.stringify(updated));
+    setCustomCategories(updated);
+    handleFieldChange(idx, 'category', text);
+    handleFieldChange(idx, 'isCreatingCategory', false);
+    handleFieldChange(idx, 'newCategoryText', '');
+  };
+
+  const handleCategorySelectChange = (idx, value) => {
+    if (value === '__NEW__') {
+      handleFieldChange(idx, 'isCreatingCategory', true);
+    } else {
+      handleFieldChange(idx, 'category', value);
+    }
+  };
+
   const showAlert = (type, title, message) => {
     setAlertConfig({ isOpen: true, type, title, message, onConfirm: () => {} });
   };
@@ -326,25 +351,22 @@ export default function Planner() {
   const renderRow = (item) => (
     <tr key={item.id} className="hover:bg-gray-50 transition-colors text-center text-sm border-b border-gray-100">
       {/* 1. Action Checkbox */}
-      <td className="px-4 py-2 whitespace-nowrap">
-        <div className="flex items-center justify-center gap-1.5">
+      <td className="px-2 py-2 w-[60px] whitespace-nowrap">
+        <div className="flex items-center justify-center">
           <input
             type="checkbox"
             checked={item.status === 'Completed'}
             onChange={() => handleToggleStatus(item.id)}
-            className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500 cursor-pointer h-[18px] w-[18px]"
+            className="w-[18px] h-[18px] text-emerald-600 border-gray-300 rounded focus:ring-emerald-500 cursor-pointer"
           />
-          {item.priority === 'Frog' && (
-            <span className="text-sm select-none" title="Frog Task">🐸</span>
-          )}
         </div>
       </td>
       {/* 2. Status Column (Dropdown Done/Pending/Select) */}
-      <td className="px-4 py-2 whitespace-nowrap text-center">
+      <td className="px-2 py-2 w-[110px] whitespace-nowrap text-center">
         <select
           value={item.status === 'Completed' ? 'Done' : (item.selectValue || 'Select')}
           onChange={(e) => handleUpdateTaskField(item.id, 'selectValue', e.target.value)}
-          className="border border-gray-300 rounded px-1.5 py-0.5 text-[11px] md:text-xs bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold"
+          className="border border-gray-300 rounded px-2 py-1 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold"
         >
           <option value="Select">Select</option>
           <option value="Pending">Pending</option>
@@ -352,93 +374,94 @@ export default function Planner() {
         </select>
       </td>
       {/* 3. Remarks Column (Input text box) */}
-      <td className="px-4 py-2 whitespace-nowrap text-center">
+      <td className="px-2 py-2 w-[180px] whitespace-nowrap text-center">
         <input
           type="text"
           value={item.remarks || ''}
           onChange={(e) => handleUpdateTaskField(item.id, 'remarks', e.target.value)}
           placeholder="Remarks..."
-          className="border border-gray-355 rounded px-2 py-0.5 text-[11px] md:text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 w-full max-w-[150px] font-medium"
+          className="border border-gray-355 rounded px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 w-full max-w-[150px] font-medium"
         />
       </td>
-      {/* 4. Duration */}
-      <td className="px-4 py-2 text-gray-900 font-medium whitespace-nowrap text-[11px] md:text-xs">
-        <div className="flex items-center justify-center gap-1">
-          <Clock size={12} className="text-gray-400" /> {item.time}
+      {/* 4. Time */}
+      <td className="px-2 py-2 w-[110px] text-gray-900 font-bold whitespace-nowrap text-xs md:text-sm">
+        <div className="flex items-center justify-center gap-1.5">
+          <Clock size={14} className="text-gray-400" /> {item.time}
         </div>
       </td>
       {/* 5. Task Description */}
-      <td className="px-4 py-2 text-gray-700 text-[11px] md:text-xs text-center font-semibold">{item.description}</td>
-      {/* 6. Category */}
-      <td className="px-4 py-2 text-gray-700 whitespace-nowrap text-[11px] md:text-xs text-center">
-        <span className="px-2 py-1 bg-sky-50 text-sky-600 rounded-md text-[10px] font-semibold">{item.category}</span>
+      <td className="px-4 py-2 text-gray-800 text-xs md:text-sm text-center font-medium">
+        <div className="flex items-center justify-center gap-2">
+          {item.priority === 'Frog' && (
+            <span className="text-base select-none flex-shrink-0" title="Frog Task">🐸</span>
+          )}
+          <span>{item.description}</span>
+        </div>
       </td>
-      {/* 7. Priority */}
-      <td className="px-4 py-2 text-gray-700 whitespace-nowrap text-[11px] md:text-xs text-center font-bold">
-        {item.priority === 'Frog' ? (
-          <span className="text-base select-none" title="Frog Task">🐸</span>
-        ) : (
-          ""
-        )}
+      {/* 6. Category */}
+      <td className="px-2 py-2 w-[140px] text-gray-700 whitespace-nowrap text-xs md:text-sm text-center">
+        <span className="font-extrabold uppercase text-[11px] text-gray-650 tracking-wider flex items-center justify-center gap-1.5 select-none">
+          <span>{getCategoryEmoji(item.category)}</span>
+          <span>{item.category}</span>
+        </span>
       </td>
     </tr>
   );
 
   const renderCard = (item) => (
-    <div key={item.id} className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm space-y-3">
-      <div className="flex justify-between items-start border-b border-gray-100 pb-2">
+    <div key={item.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3.5">
+      <div className="flex justify-between items-start border-b border-gray-100 pb-2.5">
         <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[9px] font-medium text-sky-600 bg-sky-50 px-1.5 py-0.5 rounded uppercase tracking-widest">{item.category}</span>
-            {item.priority === 'Frog' && (
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border bg-emerald-50 border-emerald-200 text-emerald-700 uppercase tracking-wider flex items-center gap-0.5">
-                🐸 Frog
-              </span>
-            )}
-            <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded uppercase tracking-widest ${item.status === 'Completed' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>{item.status}</span>
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="text-[10px] font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-100 uppercase tracking-widest">
+              {getCategoryEmoji(item.category)} {item.category}
+            </span>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-widest ${item.status === 'Completed' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-amber-50 border-amber-100 text-amber-600'}`}>{item.status}</span>
           </div>
-          <h3 className="text-sm font-medium text-gray-700 leading-tight text-left">{item.description}</h3>
+          <h3 className="text-sm md:text-base font-bold text-gray-800 leading-tight text-left flex items-start gap-1.5">
+            {item.priority === 'Frog' && (
+              <span className="text-base select-none flex-shrink-0" title="Frog Task">🐸</span>
+            )}
+            <span>{item.description}</span>
+          </h3>
         </div>
-        <div className="flex ml-2 items-center gap-1.5">
+        <div className="flex ml-2 items-center">
           <input
             type="checkbox"
             checked={item.status === 'Completed'}
             onChange={() => handleToggleStatus(item.id)}
             className="w-5 h-5 text-emerald-650 border-gray-300 rounded focus:ring-emerald-500 cursor-pointer"
           />
-          {item.priority === 'Frog' && (
-            <span className="text-sm select-none" title="Frog Task">🐸</span>
-          )}
         </div>
       </div>
       <div className="pt-1 flex items-center justify-between text-gray-500">
-        <div className="flex items-center gap-1.5">
-          <Clock size={12} />
-          <span className="text-[11px] font-medium">{item.time}</span>
+        <div className="flex items-center gap-1.5 text-xs font-semibold">
+          <Clock size={13} />
+          <span>{item.time}</span>
         </div>
       </div>
       {/* Mobile Card inputs for Status & Remarks */}
-      <div className="pt-2 border-t border-gray-100 flex flex-col gap-2">
-        <div className="flex items-center justify-between text-xs">
+      <div className="pt-2.5 border-t border-gray-100 flex flex-col gap-2.5">
+        <div className="flex items-center justify-between text-xs md:text-sm">
           <span className="font-bold text-gray-500">Status:</span>
           <select
             value={item.status === 'Completed' ? 'Done' : (item.selectValue || 'Select')}
             onChange={(e) => handleUpdateTaskField(item.id, 'selectValue', e.target.value)}
-            className="border border-gray-300 rounded px-1.5 py-0.5 text-[11px] bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold"
+            className="border border-gray-300 rounded px-2 py-1 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold"
           >
             <option value="Select">Select</option>
             <option value="Pending">Pending</option>
             <option value="Done">Done</option>
           </select>
         </div>
-        <div className="flex flex-col gap-1 text-xs text-left">
+        <div className="flex flex-col gap-1 text-xs md:text-sm text-left">
           <span className="font-bold text-gray-500">Remarks:</span>
           <input
             type="text"
             value={item.remarks || ''}
             onChange={(e) => handleUpdateTaskField(item.id, 'remarks', e.target.value)}
             placeholder="Enter remarks..."
-            className="border border-gray-300 rounded px-2 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-indigo-500 w-full font-medium"
+            className="border border-gray-300 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 w-full font-medium"
           />
         </div>
       </div>
@@ -446,9 +469,9 @@ export default function Planner() {
   );
 
   return (
-    <div className="p-0 sm:p-2 md:p-6 space-y-2 md:space-y-6 flex flex-col h-full min-h-0">
+    <div className="p-0 sm:p-2 md:p-4 space-y-2 md:space-y-3 flex flex-col h-full min-h-0">
       {/* Status Filter KPI Cards Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
         
         {/* Total Card */}
         <button
@@ -546,25 +569,42 @@ export default function Planner() {
               const isSelected = selectedDate === dateStr;
               const isTodayDate = isToday(date);
               
+              let btnClass = '';
+              let textDayNameClass = '';
+              let textDayNumberClass = '';
+
+              if (isTodayDate) {
+                // Today's date in solid blue (highlighted)
+                btnClass = isSelected
+                  ? 'bg-blue-600 border-blue-700 text-white shadow-md shadow-blue-200 scale-105'
+                  : 'bg-blue-500 border-blue-500 text-white shadow-sm hover:bg-blue-600';
+                textDayNameClass = 'text-blue-100 font-semibold';
+                textDayNumberClass = 'text-white';
+              } else if (isSelected) {
+                // Selected date (faded blue, active)
+                btnClass = 'bg-sky-100 border-sky-300 text-sky-700 font-bold';
+                textDayNameClass = 'text-sky-650';
+                textDayNumberClass = 'text-sky-900';
+              } else {
+                // Other dates (faded blue, inactive)
+                btnClass = 'bg-sky-50/40 border-sky-100 text-sky-500 hover:bg-sky-100/30 hover:border-sky-200';
+                textDayNameClass = 'text-sky-400 font-medium';
+                textDayNumberClass = 'text-sky-700 font-bold';
+              }
+              
               return (
                 <button
                   key={idx}
                   onClick={() => setSelectedDate(dateStr)}
-                  className={`flex flex-col items-center justify-center flex-1 min-w-[42px] md:min-w-[56px] py-0.5 md:py-1 rounded-md md:rounded-lg border transition-all ${
-                    isSelected 
-                      ? 'bg-sky-600 border-sky-600 text-white shadow-md shadow-sky-200' 
-                      : isTodayDate
-                        ? 'bg-sky-50 border-sky-200 text-sky-700'
-                        : 'bg-white border-gray-200 text-gray-600 hover:border-sky-300 hover:bg-sky-50'
-                  }`}
+                  className={`flex flex-col items-center justify-center flex-1 min-w-[42px] md:min-w-[56px] py-1 rounded-md md:rounded-lg border transition-all ${btnClass}`}
                 >
-                  <span className={`text-[8px] md:text-[9px] font-semibold uppercase ${isSelected ? 'text-sky-100' : 'text-gray-500'}`}>
+                  <span className={`text-[8px] md:text-[9px] uppercase tracking-wider ${textDayNameClass}`}>
                     {getDayName(date)}
                   </span>
-                  <span className={`text-sm md:text-base font-bold leading-none mt-0.5 ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                  <span className={`text-sm md:text-base leading-none mt-0.5 ${textDayNumberClass}`}>
                     {getDayNumber(date)}
                   </span>
-                  {isTodayDate && !isSelected && <span className="w-1 h-1 rounded-full bg-sky-500 mt-0.5"></span>}
+                  {isTodayDate && !isSelected && <span className="w-1 h-1 rounded-full bg-white mt-0.5 animate-pulse"></span>}
                 </button>
               );
             })}
@@ -580,58 +620,34 @@ export default function Planner() {
       </div>
 
       {/* Main Content Area */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col flex-1 min-h-0 overflow-hidden mt-2">
-        <div className="p-3 sm:p-4 border-b border-gray-100 flex flex-col gap-3 bg-white">
-          <div className="flex justify-between items-center gap-3">
-            <h2 className="text-sm font-bold text-gray-800">Tasks for {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</h2>
-            
-            <div className="flex items-center gap-2">
-              {allTodayFrogTasks.length > 0 && (
-                <button
-                  onClick={() => setShowFrogModal(true)}
-                  className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-705 rounded-lg flex items-center justify-center px-3 py-1.5 sm:py-2 text-[10px] md:text-xs font-bold shadow-sm transition active:scale-95 gap-1"
-                >
-                  <span>🐸 Frog Info ({allTodayFrogTasks.filter(t => t.isCompleted).length}/{allTodayFrogTasks.length})</span>
-                </button>
-              )}
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col flex-1 min-h-0 overflow-hidden mt-0">
+        <div className="p-3 sm:p-4 border-b border-gray-100 flex flex-wrap lg:flex-nowrap items-center justify-between gap-3 bg-white">
+          {/* 1. Title */}
+          <h2 className="text-sm font-extrabold text-gray-850 shrink-0">
+            Tasks for {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          </h2>
 
-              <button 
-                onClick={handleSaveAll}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center justify-center px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-bold shadow-sm transition active:scale-95 duration-100"
-              >
-                Save
-              </button>
-
-              <button 
-                onClick={handleAddTaskClick}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center justify-center px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold shadow-sm transition active:scale-95 duration-100"
-              >
-                Add Task
-              </button>
-            </div>
-          </div>
-
-          {/* Filtering Controls Row */}
-          <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-gray-50">
+          {/* 2. Filters */}
+          <div className="flex flex-wrap items-center gap-2 flex-1 justify-center lg:justify-start lg:ml-4">
             {/* Search Input */}
-            <div className="relative flex-1 min-w-[180px] max-w-sm">
-              <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-gray-400" />
+            <div className="relative w-44 md:w-52">
+              <Search className="absolute left-2.5 top-1.5 w-3.5 h-3.5 text-gray-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search tasks..."
-                className="w-full pl-8 pr-2.5 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 h-[30px]"
+                className="w-full pl-8 pr-2.5 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 h-[28px]"
               />
             </div>
 
-            {/* Duration Drop-down */}
+            {/* Time Drop-down */}
             <select
               value={filterDuration}
               onChange={(e) => setFilterDuration(e.target.value)}
-              className="border border-gray-300 rounded-lg text-xs px-2 py-1 bg-white text-gray-750 font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500 h-[30px]"
+              className="border border-gray-300 rounded-lg text-xs px-2 py-0.5 bg-white text-gray-750 font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500 h-[28px]"
             >
-              <option value="">All Durations</option>
+              <option value="">All Times</option>
               {durationOptions.map(opt => (
                 <option key={opt} value={opt}>{opt}</option>
               ))}
@@ -641,7 +657,7 @@ export default function Planner() {
             <select
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
-              className="border border-gray-300 rounded-lg text-xs px-2 py-1 bg-white text-gray-750 font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500 h-[30px]"
+              className="border border-gray-300 rounded-lg text-xs px-2 py-0.5 bg-white text-gray-750 font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500 h-[28px]"
             >
               <option value="">All Categories</option>
               {customCategories.map(opt => (
@@ -652,7 +668,7 @@ export default function Planner() {
             {/* Frog Task Toggle Button */}
             <button
               onClick={() => setFilterFrog(prev => prev === 'Frog' ? '' : 'Frog')}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all border flex items-center gap-1.5 h-[30px] ${
+              className={`px-2.5 py-0.5 rounded-lg text-xs font-bold transition-all border flex items-center gap-1.5 h-[28px] ${
                 filterFrog === 'Frog'
                   ? 'bg-emerald-50 border-emerald-250 text-emerald-700 shadow-sm'
                   : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
@@ -673,9 +689,35 @@ export default function Planner() {
                 }}
                 className="text-[10px] text-red-500 hover:text-red-700 font-bold hover:underline ml-1"
               >
-                Clear Filters
+                Clear
               </button>
             )}
+          </div>
+
+          {/* 3. Actions */}
+          <div className="flex items-center gap-2 shrink-0">
+            {allTodayFrogTasks.length > 0 && (
+              <button
+                onClick={() => setShowFrogModal(true)}
+                className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-705 rounded-lg flex items-center justify-center px-2.5 py-1 text-[11px] font-bold shadow-sm transition active:scale-95 gap-1 h-[28px]"
+              >
+                <span>🐸 Frog Info ({allTodayFrogTasks.filter(t => t.isCompleted).length}/{allTodayFrogTasks.length})</span>
+              </button>
+            )}
+
+            <button 
+              onClick={handleSaveAll}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center justify-center px-3.5 py-1 text-xs font-bold shadow-sm transition active:scale-95 h-[28px]"
+            >
+              Save
+            </button>
+
+            <button 
+              onClick={handleAddTaskClick}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center justify-center px-3.5 py-1 text-xs font-semibold shadow-sm transition active:scale-95 h-[28px]"
+            >
+              Add Task
+            </button>
           </div>
         </div>
         
@@ -770,9 +812,9 @@ export default function Planner() {
 
                   {/* Grid Fields: Duration, Category, Priority */}
                   <div className="grid grid-cols-3 gap-2.5">
-                    {/* Duration Select */}
+                    {/* Time Select */}
                     <div className="space-y-1">
-                      <label className="block text-[9px] font-bold text-gray-550 uppercase tracking-wide">Duration *</label>
+                      <label className="block text-[9px] font-bold text-gray-550 uppercase tracking-wide">Time *</label>
                       <select
                         required
                         value={row.duration}
@@ -785,19 +827,55 @@ export default function Planner() {
                       </select>
                     </div>
 
-                    {/* Category Select */}
+                    {/* Category Select / Add */}
                     <div className="space-y-1">
                       <label className="block text-[9px] font-bold text-gray-550 uppercase tracking-wide">Category *</label>
-                      <select
-                        required
-                        value={row.category}
-                        onChange={(e) => handleFieldChange(idx, 'category', e.target.value)}
-                        className="w-full border border-gray-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-[10px] md:text-[12px] h-[32px] bg-white font-medium"
-                      >
-                        {customCategories.map(c => (
-                          <option key={c} value={c}>{c}</option>
-                        ))}
-                      </select>
+                      {row.isCreatingCategory ? (
+                        <div className="flex gap-1 items-center">
+                          <input
+                            type="text"
+                            placeholder="New category..."
+                            value={row.newCategoryText || ''}
+                            onChange={(e) => handleFieldChange(idx, 'newCategoryText', e.target.value)}
+                            className="w-full border border-gray-300 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-[10px] h-[32px] bg-white font-medium"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleAddCategoryInline(idx);
+                              }
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleAddCategoryInline(idx)}
+                            className="h-[32px] w-[30px] flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[11px] font-bold shrink-0"
+                            title="Confirm"
+                          >
+                            ✓
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleFieldChange(idx, 'isCreatingCategory', false)}
+                            className="h-[32px] w-[30px] flex items-center justify-center bg-gray-200 hover:bg-gray-300 text-gray-600 rounded text-[11px] shrink-0"
+                            title="Cancel"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <select
+                          required
+                          value={row.category}
+                          onChange={(e) => handleCategorySelectChange(idx, e.target.value)}
+                          className="w-full border border-gray-300 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-[10px] md:text-[12px] h-[32px] bg-white font-medium"
+                        >
+                          {customCategories.map(c => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                          <option value="__NEW__">+ New Category...</option>
+                        </select>
+                      )}
                     </div>
 
                     {/* Frog Toggle */}

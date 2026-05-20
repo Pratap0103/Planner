@@ -2,10 +2,18 @@ import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
-import Footer from './Footer';
 
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    return localStorage.getItem('sidebar_collapsed') === 'true';
+  });
+
+  const handleToggleCollapse = (collapsed) => {
+    setIsCollapsed(collapsed);
+    localStorage.setItem('sidebar_collapsed', collapsed ? 'true' : 'false');
+  };
+
   const userString = localStorage.getItem('user');
   const user = userString ? JSON.parse(userString) : null;
 
@@ -16,10 +24,14 @@ const Layout = () => {
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        isCollapsed={isCollapsed}
+        setIsCollapsed={handleToggleCollapse}
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 lg:ml-56 2xl:ml-60 transition-all h-[100dvh]">
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 h-[100dvh] ${
+        isCollapsed ? 'lg:ml-16' : 'lg:ml-56 2xl:ml-60'
+      }`}>
 
         {/* Header - Sticky */}
         <Header
@@ -32,9 +44,6 @@ const Layout = () => {
             <Outlet />
           </div>
         </main>
-
-
-        <Footer />
 
       </div>
     </div>

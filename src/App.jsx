@@ -10,6 +10,9 @@ import AllTasks from './pages/AllTasks/AllTasks';
 import Calendar from './pages/Calendar/Calendar';
 import AIAssistant from './pages/AIAssistant/AIAssistant';
 import Dashboard from './pages/Dashboard/Dashboard';
+import MyProject from './pages/MyProjects/MyProject';
+import Myprojecttask from './pages/MyProjects/Myprojecttask';
+import AboutFrogPlanner from './pages/AboutFrogPlanner/AboutFrogPlanner';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import { initializeStorage } from './utils/storageManager';
@@ -39,6 +42,9 @@ function App() {
             <Route path="all-tasks" element={<AllTasks />} />
             <Route path="calendar" element={<Calendar />} />
             <Route path="ai-assistant" element={<AIAssistant />} />
+            <Route path="my-projects" element={<MyProject />} />
+            <Route path="my-projects/:projectId" element={<Myprojecttask />} />
+            <Route path="about-frog-planner" element={<AboutFrogPlanner />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -4,6 +4,7 @@ import {
   Trash2, Edit, ListTodo, ChevronLeft, ChevronRight, Zap
 } from 'lucide-react';
 import { getTasks, getCompletions, saveCompletions } from '../../utils/storageManager';
+import { getCategoryEmoji } from '../../utils/helpers';
 import DataTable from '../../components/DataTable';
 
 export default function AllTasks() {
@@ -206,16 +207,16 @@ export default function AllTasks() {
   }, [searchQuery, filterDuration, filterCategory, filterFrog]);
 
   // Table Headers
-  const tableHeaders = ['Action', 'Date', 'Task Description', 'Duration', 'Category', 'Priority', 'Status'];
+  const tableHeaders = ['Action', 'Date', 'Task Description', 'Time', 'Category', 'Status'];
 
   // Row Renderer for Pending
   const renderPendingRow = (item) => (
     <tr key={`pending-${item.id}-${item.dateInstance}`} className="hover:bg-gray-50 transition-colors text-center text-sm border-b border-gray-100">
-      <td className="px-4 py-2.5 whitespace-nowrap">
+      <td className="px-4 py-3.5 whitespace-nowrap">
         <div className="flex items-center justify-center">
           <button 
             onClick={() => handleToggleStatus(item.id, item.dateInstance)}
-            className={`px-3 py-1 text-[10px] font-bold rounded-lg border transition-all shadow-sm flex items-center justify-center gap-1 ${
+            className={`px-3.5 py-1.5 text-xs font-bold rounded-lg border transition-all shadow-sm flex items-center justify-center gap-1.5 ${
               item.priority === 'Frog'
                 ? 'bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700'
                 : 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-550 hover:text-white'
@@ -225,27 +226,28 @@ export default function AllTasks() {
           </button>
         </div>
       </td>
-      <td className="px-4 py-2.5 text-gray-900 font-semibold whitespace-nowrap text-[11px]">
+      <td className="px-4 py-3.5 text-gray-900 font-semibold whitespace-nowrap text-xs">
         {item.dateInstance}
       </td>
-      <td className="px-4 py-2.5 text-gray-900 font-bold text-center max-w-[200px] md:max-w-xs truncate" title={item.description}>
-        {item.description}
+      <td className="px-4 py-3.5 text-gray-900 font-medium text-center max-w-[200px] md:max-w-xs truncate" title={item.description}>
+        <div className="flex items-center justify-center gap-2">
+          {item.priority === 'Frog' && (
+            <span className="text-base select-none flex-shrink-0" title="Frog Task">🐸</span>
+          )}
+          <span>{item.description}</span>
+        </div>
       </td>
-      <td className="px-4 py-2.5 text-gray-650 whitespace-nowrap text-[11px] text-center font-semibold">
+      <td className="px-4 py-3.5 text-gray-650 whitespace-nowrap text-xs text-center font-bold">
         {item.duration}
       </td>
-      <td className="px-4 py-2.5 text-gray-700 whitespace-nowrap text-[11px] text-center">
-        <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-[9px] font-bold uppercase">{item.category}</span>
+      <td className="px-4 py-3.5 text-gray-700 whitespace-nowrap text-xs text-center">
+        <span className="font-extrabold uppercase text-[11px] text-gray-650 tracking-wider flex items-center justify-center gap-1.5 select-none">
+          <span>{getCategoryEmoji(item.category)}</span>
+          <span>{item.category}</span>
+        </span>
       </td>
-      <td className="px-4 py-2.5 text-gray-700 whitespace-nowrap text-[11px] text-center font-bold">
-        {item.priority === 'Frog' ? (
-          <span className="text-base select-none" title="Frog Task">🐸</span>
-        ) : (
-          ""
-        )}
-      </td>
-      <td className="px-4 py-2.5 text-gray-700 whitespace-nowrap text-[11px] text-center">
-        <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-600 border border-amber-100">
+      <td className="px-4 py-3.5 text-gray-750 whitespace-nowrap text-xs text-center">
+        <span className="px-2.5 py-1 rounded text-[11px] font-bold bg-amber-50 text-amber-600 border border-amber-100 uppercase tracking-wider">
           Pending
         </span>
       </td>
@@ -254,26 +256,30 @@ export default function AllTasks() {
 
   // Card Renderer for Pending (Mobile)
   const renderPendingCard = (item) => (
-    <div key={`pending-card-${item.id}-${item.dateInstance}`} className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-2 text-left">
+    <div key={`pending-card-${item.id}-${item.dateInstance}`} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-3 text-left">
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-bold text-gray-500">{item.dateInstance}</span>
         <div className="flex items-center gap-1.5">
-          <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-[9px] font-bold uppercase">{item.category}</span>
-          <span className="px-2 py-0.5 bg-amber-50 text-amber-600 border border-amber-100 rounded text-[9px] font-bold uppercase">Pending</span>
+          <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-[9px] font-bold uppercase">
+            {getCategoryEmoji(item.category)} {item.category}
+          </span>
+          <span className="px-2 py-0.5 bg-amber-50 text-amber-650 border border-amber-100 rounded text-[9px] font-bold uppercase">Pending</span>
         </div>
       </div>
-      <p className="text-xs font-extrabold text-gray-800 tracking-tight">{item.description}</p>
-      <div className="flex items-center justify-between pt-1 border-t border-gray-100">
-        <span className="text-[10px] font-bold text-gray-550 flex items-center gap-1">
-          <Clock size={11} /> {item.duration}
-          {item.priority === 'Frog' && <span className="ml-1 text-xs">🐸</span>}
+      <p className="text-sm font-extrabold text-gray-800 tracking-tight flex items-start gap-1.5">
+        {item.priority === 'Frog' && <span className="text-base select-none flex-shrink-0">🐸</span>}
+        <span>{item.description}</span>
+      </p>
+      <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+        <span className="text-[10px] font-bold text-gray-550 flex items-center gap-1.5">
+          <Clock size={12} /> {item.duration}
         </span>
         <button 
           onClick={() => handleToggleStatus(item.id, item.dateInstance)}
-          className={`px-3 py-1 text-[10px] font-bold rounded-lg border shadow-sm transition-all ${
+          className={`px-3 py-1 text-[11px] font-bold rounded-lg border shadow-sm transition-all ${
             item.priority === 'Frog'
               ? 'bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700'
-              : 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-550 hover:text-white'
+              : 'bg-emerald-50 text-emerald-605 border-emerald-200 hover:bg-emerald-550 hover:text-white'
           }`}
         >
           {item.priority === 'Frog' ? '🐸 Eat Frog' : 'Done'}
@@ -285,37 +291,38 @@ export default function AllTasks() {
   // Row Renderer for History
   const renderHistoryRow = (item) => (
     <tr key={`history-${item.id}-${item.dateInstance}`} className="hover:bg-gray-50 transition-colors text-center text-sm border-b border-gray-100">
-      <td className="px-4 py-2.5 whitespace-nowrap">
+      <td className="px-4 py-3.5 whitespace-nowrap">
         <div className="flex items-center justify-center">
           <button 
             onClick={() => handleToggleStatus(item.id, item.dateInstance)}
-            className="px-3 py-1 text-[10px] font-bold rounded-lg border border-amber-250 bg-amber-50 text-amber-705 hover:bg-amber-500 hover:text-white transition-all shadow-sm"
+            className="px-3.5 py-1.5 text-xs font-bold rounded-lg border border-amber-250 bg-amber-50 text-amber-705 hover:bg-amber-500 hover:text-white transition-all shadow-sm"
           >
             Undo
           </button>
         </div>
       </td>
-      <td className="px-4 py-2.5 text-gray-500 font-semibold whitespace-nowrap text-[11px]">
+      <td className="px-4 py-3.5 text-gray-500 font-semibold whitespace-nowrap text-xs">
         {item.dateInstance}
       </td>
-      <td className="px-4 py-2.5 text-gray-400 font-bold text-center max-w-[200px] md:max-w-xs truncate line-through" title={item.description}>
-        {item.description}
+      <td className="px-4 py-3.5 text-gray-400 font-normal text-center max-w-[200px] md:max-w-xs truncate line-through" title={item.description}>
+        <div className="flex items-center justify-center gap-2">
+          {item.priority === 'Frog' && (
+            <span className="text-base select-none flex-shrink-0" title="Frog Task">🐸</span>
+          )}
+          <span>{item.description}</span>
+        </div>
       </td>
-      <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap text-[11px] text-center font-semibold">
+      <td className="px-4 py-3.5 text-gray-500 whitespace-nowrap text-xs text-center font-bold">
         {item.duration}
       </td>
-      <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap text-[11px] text-center">
-        <span className="px-2 py-0.5 bg-gray-100 text-gray-500 border border-gray-200 rounded text-[9px] font-bold uppercase">{item.category}</span>
+      <td className="px-4 py-3.5 text-gray-500 whitespace-nowrap text-xs text-center">
+        <span className="font-bold uppercase text-[11px] text-gray-500 tracking-wider flex items-center justify-center gap-1.5 select-none">
+          <span>{getCategoryEmoji(item.category)}</span>
+          <span>{item.category}</span>
+        </span>
       </td>
-      <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap text-[11px] text-center font-bold">
-        {item.priority === 'Frog' ? (
-          <span className="text-base select-none" title="Frog Task">🐸</span>
-        ) : (
-          ""
-        )}
-      </td>
-      <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap text-[11px] text-center">
-        <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100">
+      <td className="px-4 py-3.5 text-gray-500 whitespace-nowrap text-xs text-center">
+        <span className="px-2.5 py-1 rounded text-[11px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 uppercase tracking-wider">
           Completed
         </span>
       </td>
@@ -324,23 +331,27 @@ export default function AllTasks() {
 
   // Card Renderer for History (Mobile)
   const renderHistoryCard = (item) => (
-    <div key={`history-card-${item.id}-${item.dateInstance}`} className="bg-white p-3.5 rounded-xl border border-gray-250 shadow-sm flex flex-col gap-2 text-left opacity-75 animate-in fade-in duration-100">
+    <div key={`history-card-${item.id}-${item.dateInstance}`} className="bg-white p-4 rounded-xl border border-gray-250 shadow-sm flex flex-col gap-3 text-left opacity-75 animate-in fade-in duration-100">
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-bold text-gray-500">{item.dateInstance}</span>
         <div className="flex items-center gap-1.5">
-          <span className="px-2 py-0.5 bg-gray-100 text-gray-500 border border-gray-200 rounded text-[9px] font-bold uppercase">{item.category}</span>
+          <span className="px-2 py-0.5 bg-gray-100 text-gray-500 border border-gray-200 rounded text-[9px] font-bold uppercase">
+            {getCategoryEmoji(item.category)} {item.category}
+          </span>
           <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded text-[9px] font-bold uppercase">Completed</span>
         </div>
       </div>
-      <p className="text-xs font-extrabold text-gray-400 tracking-tight line-through">{item.description}</p>
-      <div className="flex items-center justify-between pt-1 border-t border-gray-100">
-        <span className="text-[10px] font-bold text-gray-550 flex items-center gap-1">
-          <Clock size={11} /> {item.duration}
-          {item.priority === 'Frog' && <span className="ml-1 text-xs">🐸</span>}
+      <p className="text-sm font-extrabold text-gray-400 tracking-tight line-through flex items-start gap-1.5">
+        {item.priority === 'Frog' && <span className="text-base select-none flex-shrink-0">🐸</span>}
+        <span>{item.description}</span>
+      </p>
+      <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+        <span className="text-[10px] font-bold text-gray-550 flex items-center gap-1.5">
+          <Clock size={12} /> {item.duration}
         </span>
         <button 
           onClick={() => handleToggleStatus(item.id, item.dateInstance)}
-          className="px-3 py-1 text-[10px] font-bold rounded-lg border border-amber-250 bg-amber-50 text-amber-705 hover:bg-amber-500 hover:text-white transition-all shadow-sm"
+          className="px-3 py-1 text-[11px] font-bold rounded-lg border border-amber-250 bg-amber-50 text-amber-705 hover:bg-amber-500 hover:text-white transition-all shadow-sm"
         >
           Undo
         </button>
@@ -446,13 +457,13 @@ export default function AllTasks() {
               />
             </div>
 
-            {/* Duration Selector */}
+            {/* Time Selector */}
             <select
               value={filterDuration}
               onChange={(e) => setFilterDuration(e.target.value)}
               className="border border-gray-300 rounded-xl text-xs px-3 py-1.5 bg-white text-gray-700 font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500 h-[32px] w-full sm:w-auto"
             >
-              <option value="">All Durations</option>
+              <option value="">All Times</option>
               {durationOptions.map(opt => (
                 <option key={opt} value={opt}>{opt}</option>
               ))}

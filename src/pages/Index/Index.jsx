@@ -4,6 +4,7 @@ import DataTable from '../../components/DataTable';
 import ModalAlert from '../../components/ModalAlert';
 import ModalForm from '../../components/ModalForm';
 import { getTasks, saveTasks } from '../../utils/storageManager';
+import { getCategoryEmoji } from '../../utils/helpers';
 
 export default function Index() {
   const [tasks, setTasks] = useState([]);
@@ -34,7 +35,7 @@ export default function Index() {
     priority: ''
   });
 
-  const headers = ['Action', 'Task Description', 'Duration', 'Category', 'Priority'];
+  const headers = ['Action', 'Task Description', 'Time', 'Category'];
 
   useEffect(() => {
     setTasks(getTasks());
@@ -144,57 +145,57 @@ export default function Index() {
 
   const renderRow = (item) => (
     <tr key={item.id} className="hover:bg-gray-50 transition-colors text-center text-sm border-b border-gray-100">
-      <td className="px-4 py-2 whitespace-nowrap">
+      <td className="px-4 py-3.5 whitespace-nowrap">
         <div className="flex items-center justify-center gap-2">
-          <button onClick={() => handleEdit(item)} className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+          <button onClick={() => handleEdit(item)} className="p-2 bg-indigo-50 text-indigo-600 rounded-lg" title="Edit">
             <Edit size={14} />
           </button>
-          <button onClick={() => handleDelete(item.id)} className="p-1.5 bg-red-50 text-red-500 rounded-lg">
+          <button onClick={() => handleDelete(item.id)} className="p-2 bg-red-50 text-red-500 rounded-lg" title="Delete">
             <Trash2 size={14} />
           </button>
         </div>
       </td>
-      <td className="px-4 py-2 text-gray-900 font-medium text-center text-[11px] md:text-xs max-w-[300px] truncate" title={item.description}>
-        {item.description}
+      <td className="px-4 py-3.5 text-gray-900 font-bold text-left text-xs md:text-sm max-w-[300px] truncate" title={item.description}>
+        <div className="flex items-center gap-2">
+          {item.priority === 'Frog' && (
+            <span className="text-base select-none flex-shrink-0" title="Frog Task">🐸</span>
+          )}
+          <span>{item.description}</span>
+        </div>
       </td>
-      <td className="px-4 py-2 text-gray-700 whitespace-nowrap text-[11px] md:text-xs">
+      <td className="px-4 py-3.5 text-gray-750 whitespace-nowrap text-xs md:text-sm font-bold">
         {item.duration}
       </td>
-      <td className="px-4 py-2 text-gray-700 whitespace-nowrap text-[11px] md:text-xs">
-        <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-md text-[10px] font-semibold font-bold">
-          {item.category}
+      <td className="px-4 py-3.5 text-gray-700 whitespace-nowrap text-xs md:text-sm text-center">
+        <span className="px-2.5 py-1 bg-indigo-50 text-indigo-605 border border-indigo-100 rounded text-[11px] font-bold uppercase">
+          {getCategoryEmoji(item.category)} {item.category}
         </span>
-      </td>
-      <td className="px-4 py-2 text-gray-700 whitespace-nowrap text-[11px] md:text-xs">
-        {item.priority === 'Frog' ? (
-          <span className="text-base select-none" title="Frog Task">🐸</span>
-        ) : (
-          ""
-        )}
       </td>
     </tr>
   );
 
   const renderCard = (item) => (
-    <div key={item.id} className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm space-y-3 text-left">
-      <div className="flex justify-between items-start border-b border-gray-100 pb-2">
+    <div key={item.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3.5 text-left animate-in fade-in duration-100">
+      <div className="flex justify-between items-start border-b border-gray-100 pb-2.5">
         <div className="flex gap-2 flex-wrap">
-          <span className="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded uppercase tracking-wider">{item.category}</span>
-          <span className="text-[9px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded uppercase tracking-wider">{item.duration}</span>
-          {item.priority === 'Frog' && (
-            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border bg-emerald-50 border-emerald-250 text-emerald-700 uppercase tracking-wider">🐸 Frog</span>
-          )}
+          <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 uppercase tracking-wider">
+            {getCategoryEmoji(item.category)} {item.category}
+          </span>
+          <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded uppercase tracking-wider">{item.duration}</span>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => handleEdit(item)} className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+          <button onClick={() => handleEdit(item)} className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg" title="Edit">
             <Edit size={14} />
           </button>
-          <button onClick={() => handleDelete(item.id)} className="p-1.5 bg-red-50 text-red-500 rounded-lg">
+          <button onClick={() => handleDelete(item.id)} className="p-1.5 bg-red-50 text-red-500 rounded-lg" title="Delete">
             <Trash2 size={14} />
           </button>
         </div>
       </div>
-      <p className="text-sm font-medium text-gray-700 leading-tight">{item.description}</p>
+      <p className="text-sm md:text-base font-bold text-gray-800 leading-tight flex items-start gap-1.5">
+        {item.priority === 'Frog' && <span className="text-base select-none flex-shrink-0">🐸</span>}
+        <span>{item.description}</span>
+      </p>
     </div>
   );
 
@@ -293,9 +294,9 @@ export default function Index() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
 
-            {/* Duration select */}
+            {/* Time select */}
             <div className="space-y-1">
-              <label className="block text-[10px] md:text-[12px] text-gray-700 uppercase tracking-tight font-bold">Duration *</label>
+              <label className="block text-[10px] md:text-[12px] text-gray-700 uppercase tracking-tight font-bold">Time *</label>
               <select
                 required
                 value={formData.duration}

@@ -10,6 +10,8 @@ import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
 import { getTasks, getCompletions } from '../../utils/storageManager';
+import { getCategoryEmoji } from '../../utils/helpers';
+import { useAuthStore } from '../../store/authStore';
 
 // Inline ProgressCircle component since we don't have separate ProgressCircle.jsx
 const ProgressCircle = ({ value, size = 90, strokeWidth = 7, color, label }) => {
@@ -32,7 +34,18 @@ const ProgressCircle = ({ value, size = 90, strokeWidth = 7, color, label }) => 
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [tasks, setTasks] = useState([]);
+
+  // Time-based greeting
+  const getTimeGreeting = () => {
+    const h = new Date().getHours();
+    if (h >= 5 && h < 12)  return { wish: 'Good Morning', emoji: '🌅', sub: 'Start strong — eat your frog first!' };
+    if (h >= 12 && h < 17) return { wish: 'Good Afternoon', emoji: '☀️', sub: 'Stay focused and keep the momentum going.' };
+    if (h >= 17 && h < 21) return { wish: 'Good Evening', emoji: '🌇', sub: 'Great work today — review and wrap up.' };
+    return { wish: 'Good Night', emoji: '🌙', sub: 'Rest well. Tomorrow, eat the frog early!' };
+  };
+  const greeting = getTimeGreeting();
   const [completions, setCompletions] = useState({});
   const [timeRange, setTimeRange] = useState('Today'); // Today, Weekly, Monthly
   const [showTodayModal, setShowTodayModal] = useState(false);
@@ -280,6 +293,27 @@ export default function Dashboard() {
 
   return (
     <div className="p-0 sm:p-2 md:p-6 space-y-6 flex flex-col h-full min-h-0 overflow-y-auto">
+
+      {/* ── Time-Based Greeting Banner ── */}
+      <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-2xl px-5 py-4 flex items-center justify-between gap-4 shadow-md flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <span className="text-3xl select-none">{greeting.emoji}</span>
+          <div>
+            <h2 className="text-base font-extrabold text-white leading-tight">
+              {greeting.wish}, {user?.name?.split(' ')[0] || 'Friend'}! 🐸
+            </h2>
+            <p className="text-xs text-green-100/80 font-medium mt-0.5">{greeting.sub}</p>
+          </div>
+        </div>
+        <div className="hidden sm:flex flex-col items-end text-right">
+          <span className="text-white/90 text-[11px] font-bold">
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          </span>
+          <span className="text-green-200/70 text-[10px] font-medium">
+            {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+      </div>
       
       {/* Date Filter & Switcher Header */}
       <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm space-y-4 flex-shrink-0 text-left">
@@ -365,11 +399,13 @@ export default function Dashboard() {
                 key={ds}
                 onClick={() => setSelectedDate(new Date(d))}
                 className={`py-2 rounded-xl text-center transition-all border ${
-                  isSelected
-                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-500/20'
-                    : isCurrentToday
-                      ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                      : 'bg-gray-50 text-gray-600 border-gray-100 hover:bg-gray-100'
+                  isCurrentToday
+                    ? isSelected
+                      ? 'bg-blue-600 border-blue-700 text-white shadow-md shadow-blue-500/20 font-extrabold scale-105 z-10'
+                      : 'bg-blue-500 border-blue-500 text-white shadow-sm hover:bg-blue-600 font-bold'
+                    : isSelected
+                      ? 'bg-sky-100 border-sky-350 text-sky-700 font-bold'
+                      : 'bg-sky-50/40 border-sky-100 text-sky-500/80 hover:bg-sky-100/30 hover:border-sky-200'
                 }`}
               >
                 <p className="text-[9px] font-bold uppercase tracking-tight opacity-80">
@@ -377,7 +413,7 @@ export default function Dashboard() {
                 </p>
                 <p className="text-xs font-extrabold mt-0.5">{d.getDate()}</p>
                 {dayTasksCount > 0 && (
-                  <div className={`mx-auto mt-1 w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : 'bg-indigo-500 animate-pulse'}`} />
+                  <div className={`mx-auto mt-1 w-1.5 h-1.5 rounded-full ${isSelected || isCurrentToday ? 'bg-white' : 'bg-sky-500 animate-pulse'}`} />
                 )}
               </button>
             );
@@ -398,8 +434,11 @@ export default function Dashboard() {
                 <div className="flex items-start gap-2.5">
                   <div className="w-2 h-2 rounded-full bg-rose-500 flex-shrink-0 mt-1.5" />
                   <div className="min-w-0">
-                    <p className="text-xs font-bold text-gray-800 truncate">{task.description}</p>
-                    <p className="text-[9px] text-gray-400 mt-0.5">{task.duration} • {task.category}</p>
+                    <p className="text-xs font-bold text-gray-800 flex items-center gap-1 truncate">
+                      <span className="select-none">🐸</span>
+                      <span>{task.description}</span>
+                    </p>
+                    <p className="text-[9px] text-gray-400 mt-0.5">{task.duration} • {getCategoryEmoji(task.category)} {task.category}</p>
                   </div>
                 </div>
                 <button 
@@ -475,13 +514,14 @@ export default function Dashboard() {
                         ⏰ {t.duration}
                       </span>
                     </div>
-                    <h4 className={`text-xs md:text-sm font-bold text-gray-800 leading-snug ${isCompleted ? 'line-through text-gray-400 font-medium' : ''}`}>
-                      {t.description}
+                    <h4 className={`text-xs md:text-sm font-bold text-gray-800 leading-snug flex items-start gap-1.5 ${isCompleted ? 'line-through text-gray-400 font-medium' : ''}`}>
+                      <span className="select-none flex-shrink-0">🐸</span>
+                      <span>{t.description}</span>
                     </h4>
                   </div>
                   <div className="flex justify-between items-center border-t border-gray-100 pt-2 mt-3">
-                    <span className="text-[9px] text-indigo-650 font-bold bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">
-                      {t.category}
+                    <span className="text-[9px] text-indigo-650 font-bold bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 uppercase">
+                      {getCategoryEmoji(t.category)} {t.category}
                     </span>
                     <button 
                       onClick={() => handleToggleTaskStatus(t.id)}
@@ -637,17 +677,13 @@ export default function Dashboard() {
                     <div className="flex items-center gap-3">
                       <div className="w-1.5 h-8 bg-indigo-500 rounded-full flex-shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-xs font-semibold text-gray-800 truncate">{task.description}</p>
-                        <p className="text-[9px] text-gray-400 font-bold uppercase mt-0.5">⏰ {task.duration} • {task.category}</p>
+                        <p className="text-xs font-bold text-gray-800 flex items-center gap-1 truncate">
+                          {task.priority === 'Frog' && <span className="select-none flex-shrink-0">🐸</span>}
+                          <span>{task.description}</span>
+                        </p>
+                        <p className="text-[9px] text-gray-400 font-bold uppercase mt-0.5">⏰ {task.duration} • {getCategoryEmoji(task.category)} {task.category}</p>
                       </div>
                     </div>
-                    {task.priority === 'Frog' ? (
-                      <span className="px-2 py-0.5 rounded text-[9px] border font-bold bg-emerald-50 border-emerald-150 text-emerald-700">
-                        🐸 Frog
-                      </span>
-                    ) : (
-                      ""
-                    )}
                   </div>
                 ))
               ) : (
@@ -798,8 +834,11 @@ export default function Dashboard() {
                   <div key={t.id || idx} className="flex items-center gap-2.5 p-2 rounded-lg bg-gray-50 border border-gray-100 text-left">
                     <div className="w-1.5 h-6 bg-emerald-500 rounded-full flex-shrink-0" />
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold text-gray-800 truncate">{t.description}</p>
-                      <p className="text-[9px] text-gray-400 font-bold uppercase mt-0.5">⏰ {t.duration} • {t.category}</p>
+                      <p className="text-xs font-bold text-gray-800 flex items-center gap-1 truncate">
+                        {t.priority === 'Frog' && <span className="select-none flex-shrink-0">🐸</span>}
+                        <span>{t.description}</span>
+                      </p>
+                      <p className="text-[9px] text-gray-400 font-bold uppercase mt-0.5">⏰ {t.duration} • {getCategoryEmoji(t.category)} {t.category}</p>
                     </div>
                   </div>
                 ))
@@ -835,10 +874,9 @@ export default function Dashboard() {
             <thead className="bg-gray-50 sticky top-0 z-10">
               <tr>
                 <th className="px-4 py-2.5 font-bold text-gray-500 uppercase tracking-tight text-[10px] bg-gray-50">Date</th>
-                <th className="px-4 py-2.5 font-bold text-gray-500 uppercase tracking-tight text-[10px] bg-gray-50">Duration</th>
+                <th className="px-4 py-2.5 font-bold text-gray-500 uppercase tracking-tight text-[10px] bg-gray-50">Time</th>
                 <th className="px-4 py-2.5 font-bold text-gray-500 uppercase tracking-tight text-[10px] bg-gray-50">Description</th>
                 <th className="px-4 py-2.5 font-bold text-gray-500 uppercase tracking-tight text-[10px] bg-gray-50">Category</th>
-                <th className="px-4 py-2.5 font-bold text-gray-500 uppercase tracking-tight text-[10px] bg-gray-50">Priority</th>
                 <th className="px-4 py-2.5 font-bold text-gray-500 uppercase tracking-tight text-[10px] bg-gray-50">Status</th>
               </tr>
             </thead>
@@ -859,28 +897,26 @@ export default function Dashboard() {
                   const isDone = dateCompletedIds.includes(t.id);
                   return (
                     <tr key={`${dStr}-${t.id}-${idx}`} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-2 whitespace-nowrap text-gray-500 font-medium">
+                      <td className="px-4 py-3 whitespace-nowrap text-gray-500 font-bold">
                         {dStr}
                       </td>
-                      <td className="px-4 py-2 whitespace-nowrap text-gray-700 font-semibold">
+                      <td className="px-4 py-3 whitespace-nowrap text-gray-700 font-bold">
                         {t.duration}
                       </td>
-                      <td className="px-4 py-2 text-gray-900 font-medium text-left">
-                        {t.description}
+                      <td className="px-4 py-3 text-gray-900 font-bold text-left">
+                        <div className="flex items-center gap-1.5">
+                          {t.priority === 'Frog' && (
+                            <span className="text-base select-none" title="Frog Task">🐸</span>
+                          )}
+                          <span>{t.description}</span>
+                        </div>
                       </td>
-                      <td className="px-4 py-2 whitespace-nowrap text-left">
-                        <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded border border-indigo-100 font-bold text-[9px]">
-                          {t.category}
+                      <td className="px-4 py-3 whitespace-nowrap text-left">
+                        <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded border border-indigo-100 font-extrabold text-[9px] uppercase">
+                          {getCategoryEmoji(t.category)} {t.category}
                         </span>
                       </td>
-                      <td className="px-4 py-2 whitespace-nowrap text-center">
-                        {t.priority === 'Frog' ? (
-                          <span className="text-base select-none" title="Frog Task">🐸</span>
-                        ) : (
-                          ""
-                        )}
-                      </td>
-                      <td className="px-4 py-2 whitespace-nowrap text-left">
+                      <td className="px-4 py-3 whitespace-nowrap text-left">
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-bold border ${
                           isDone 
                             ? 'bg-emerald-50 border-emerald-100 text-emerald-700' 

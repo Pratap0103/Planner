@@ -72,7 +72,7 @@ const DataTable = ({
           <select
             value={itemsPerPage}
             onChange={(e) => onItemsPerPageChange(Number(e.target.value))}
-            className="border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:border-indigo-500 bg-white font-medium text-xs md:text-sm shadow-sm"
+            className="border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:border-green-500 bg-white font-medium text-xs md:text-sm shadow-sm"
           >
             {[10, 20, 50, 100].map(val => (
               <option key={val} value={val}>{val}</option>
@@ -88,7 +88,7 @@ const DataTable = ({
           <button
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className="p-1.5 md:px-2 md:py-1 border border-gray-300 rounded-md bg-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition shadow-sm flex items-center justify-center text-indigo-600"
+            className="p-1.5 md:px-2 md:py-1 border border-gray-300 rounded-md bg-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-50 transition shadow-sm flex items-center justify-center text-green-600"
           >
             <ChevronLeft size={16} strokeWidth={2.5} />
           </button>
@@ -98,7 +98,7 @@ const DataTable = ({
           <button
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === totalPages || totalPages === 0}
-            className="p-1.5 md:px-2 md:py-1 border border-gray-300 rounded-md bg-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition shadow-sm flex items-center justify-center text-indigo-600"
+            className="p-1.5 md:px-2 md:py-1 border border-gray-300 rounded-md bg-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-50 transition shadow-sm flex items-center justify-center text-green-600"
           >
             <ChevronRight size={16} strokeWidth={2.5} />
           </button>

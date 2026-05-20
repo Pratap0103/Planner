@@ -36,10 +36,10 @@ const ModalAlert = ({
       shadow: 'shadow-rose-200/50'
     },
     confirm: {
-      icon: <HelpCircle className="text-indigo-500" size={52} />,
-      btnColor: 'bg-indigo-600 hover:bg-indigo-700',
-      iconBg: 'bg-indigo-50',
-      shadow: 'shadow-indigo-200/50'
+      icon: <HelpCircle className="text-green-600" size={52} />,
+      btnColor: 'bg-green-600 hover:bg-green-700',
+      iconBg: 'bg-green-50',
+      shadow: 'shadow-green-200/50'
     }
   }[type] || {};
 
@@ -68,7 +68,7 @@ const ModalAlert = ({
                   onConfirm();
                   onClose();
                 }}
-                className={`flex-1 text-white font-bold py-4 rounded-2xl transition-all active:scale-95 shadow-lg shadow-indigo-200/50 ${config.btnColor}`}
+                className={`flex-1 text-white font-bold py-4 rounded-2xl transition-all active:scale-95 shadow-lg shadow-green-200/50 ${config.btnColor}`}
               >
                 Confirm
               </button>

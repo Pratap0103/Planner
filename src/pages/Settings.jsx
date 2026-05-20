@@ -223,7 +223,6 @@ export default function Settings() {
         </div>
 
       </form>
-
     </div>
   );
 }

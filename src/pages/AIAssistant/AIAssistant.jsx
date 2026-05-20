@@ -16,7 +16,7 @@ export default function AIAssistant() {
         {
           id: 'welcome',
           sender: 'bot',
-          text: `Hello ${user.name}! 👋 I am your Botivate AI Assistant. I can help you analyze your tasks, track your completions, and review your daily schedule. Ask me anything about your planner!`,
+          text: `Hello ${user.name}! 👋 I am your Frog Planner AI Assistant. I can help you analyze your tasks, track your completions, and review your daily schedule. Ask me anything about your planner!`,
           timestamp: new Date(Date.now() - 60000 * 5)
         },
         {
@@ -255,7 +255,7 @@ export default function AIAssistant() {
             </div>
             <div>
               <h2 className="text-xs font-bold text-gray-800 uppercase tracking-tight">AI Planner Assistant</h2>
-              <p className="text-[10px] text-gray-400">Powered by Botivate Local Knowledge Base</p>
+              <p className="text-[10px] text-gray-400">Powered by Frog Planner Local Knowledge Base</p>
             </div>
           </div>
           <button 
