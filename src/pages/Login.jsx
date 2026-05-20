@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Lock, Eye, EyeOff, ArrowRight, X, BadgeCheck, Mail, UserPlus } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, ArrowRight, X, BadgeCheck, Mail, UserPlus, Phone, Smartphone, Building2, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/authStore';
 import { getUsers, saveUsers } from '../utils/storageManager';
@@ -24,6 +24,10 @@ const Login = () => {
   const [signupName, setSignupName] = useState('');
   const [signupId, setSignupId] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
+  const [signupMobile, setSignupMobile] = useState('');
+  const [signupWhatsapp, setSignupWhatsapp] = useState('');
+  const [signupCompany, setSignupCompany] = useState('');
+  const [signupCity, setSignupCity] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirm, setSignupConfirm] = useState('');
   const [showSignupPwd, setShowSignupPwd] = useState(false);
@@ -82,7 +86,11 @@ const Login = () => {
         role: 'USER',
         accessPages: [],
         email: signupEmail.trim() || '',
-        phone: '',
+        phone: signupMobile.trim() || '',
+        mobile: signupMobile.trim() || '',
+        whatsapp: signupWhatsapp.trim() || '',
+        company: signupCompany.trim() || '',
+        city: signupCity.trim() || '',
         designation: 'Team Member',
         department: 'General Division',
         bio: '',
@@ -291,6 +299,52 @@ const Login = () => {
                   </div>
                   <input type="email" value={signupEmail} onChange={(e) => setSignupEmail(e.target.value)}
                     className={inputCls} placeholder="your@email.com" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Mobile Number</label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Phone className="h-3.5 w-3.5 text-gray-400 group-focus-within:text-green-600 transition-colors" />
+                    </div>
+                    <input type="tel" value={signupMobile} onChange={(e) => setSignupMobile(e.target.value)}
+                      className={inputCls} placeholder="+91 98765 43210" />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">WhatsApp No.</label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Smartphone className="h-3.5 w-3.5 text-gray-400 group-focus-within:text-green-600 transition-colors" />
+                    </div>
+                    <input type="tel" value={signupWhatsapp} onChange={(e) => setSignupWhatsapp(e.target.value)}
+                      className={inputCls} placeholder="+91 98765 43210" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Company / Business</label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Building2 className="h-3.5 w-3.5 text-gray-400 group-focus-within:text-green-600 transition-colors" />
+                    </div>
+                    <input type="text" value={signupCompany} onChange={(e) => setSignupCompany(e.target.value)}
+                      className={inputCls} placeholder="Your company name" />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">City / Location</label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <MapPin className="h-3.5 w-3.5 text-gray-400 group-focus-within:text-green-600 transition-colors" />
+                    </div>
+                    <input type="text" value={signupCity} onChange={(e) => setSignupCity(e.target.value)}
+                      className={inputCls} placeholder="Mumbai, Delhi..." />
+                  </div>
                 </div>
               </div>
 

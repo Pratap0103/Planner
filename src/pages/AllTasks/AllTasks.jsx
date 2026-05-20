@@ -19,6 +19,7 @@ export default function AllTasks() {
   const [filterFrog, setFilterFrog] = useState(''); // "" or "Frog"
   const [filterFromDate, setFilterFromDate] = useState('');
   const [filterToDate, setFilterToDate] = useState('');
+  const [datePreset, setDatePreset] = useState(''); // 'day' | 'week' | 'month' | ''
 
   // Pagination states (showing 100 rows by default)
   const [pendingPage, setPendingPage] = useState(1);
@@ -215,6 +216,33 @@ export default function AllTasks() {
     setPendingPage(1);
     setHistoryPage(1);
   }, [searchQuery, filterDuration, filterCategory, filterFrog, filterFromDate, filterToDate]);
+
+  // Quick date preset helper
+  const applyPreset = (preset) => {
+    const fmt = (d) => {
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    };
+    const now = new Date();
+    if (preset === 'day') {
+      const t = fmt(now);
+      setFilterFromDate(t); setFilterToDate(t);
+    } else if (preset === 'week') {
+      const day = now.getDay();
+      const mon = new Date(now); mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+      const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+      setFilterFromDate(fmt(mon)); setFilterToDate(fmt(sun));
+    } else if (preset === 'month') {
+      const first = new Date(now.getFullYear(), now.getMonth(), 1);
+      const last  = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      setFilterFromDate(fmt(first)); setFilterToDate(fmt(last));
+    } else {
+      setFilterFromDate(''); setFilterToDate('');
+    }
+    setDatePreset(preset);
+  };
 
   // Table Headers
   const tableHeaders = ['Action', 'Date', 'Task Description', 'Time', 'Category', 'Status'];
@@ -467,20 +495,37 @@ export default function AllTasks() {
               />
             </div>
 
+            {/* Quick Preset Buttons: Day / Week / Month */}
+            <div className="flex items-center h-[32px] border border-gray-300 rounded-xl overflow-hidden bg-white divide-x divide-gray-300">
+              {[{ key: 'day', label: 'Day' }, { key: 'week', label: 'Week' }, { key: 'month', label: 'Month' }].map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => applyPreset(datePreset === key ? '' : key)}
+                  className={`px-3 h-full text-[11px] font-bold transition-colors ${
+                    datePreset === key
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-white text-gray-600 hover:bg-indigo-50 hover:text-indigo-700'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
             {/* From – To Date inline pill */}
             <div className="flex items-center h-[32px] border border-gray-300 rounded-xl overflow-hidden bg-white divide-x divide-gray-300">
               <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide px-2 whitespace-nowrap bg-gray-50">From</span>
               <input
                 type="date"
                 value={filterFromDate}
-                onChange={(e) => setFilterFromDate(e.target.value)}
+                onChange={(e) => { setFilterFromDate(e.target.value); setDatePreset(''); }}
                 className="text-xs px-2 h-full bg-white text-gray-700 font-semibold focus:outline-none"
               />
               <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide px-2 whitespace-nowrap bg-gray-50">To</span>
               <input
                 type="date"
                 value={filterToDate}
-                onChange={(e) => setFilterToDate(e.target.value)}
+                onChange={(e) => { setFilterToDate(e.target.value); setDatePreset(''); }}
                 className="text-xs px-2 h-full bg-white text-gray-700 font-semibold focus:outline-none"
               />
             </div>
@@ -532,6 +577,7 @@ export default function AllTasks() {
                   setFilterFrog('');
                   setFilterFromDate('');
                   setFilterToDate('');
+                  setDatePreset('');
                 }}
                 className="text-xs text-red-500 hover:text-red-700 font-bold hover:underline py-1 px-2"
               >

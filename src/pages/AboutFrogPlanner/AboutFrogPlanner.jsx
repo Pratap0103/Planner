@@ -196,6 +196,135 @@ const AboutFrogPlanner = () => {
         </div>
       </div>
 
+      {/* ── How It Works (6-step detailed) ── */}
+      <div className="bg-white rounded-2xl border border-green-100 shadow-sm p-5 space-y-0">
+        <div className="mb-5">
+          <h2 className="text-xl font-black text-gray-900">How It Works</h2>
+          <p className="text-xs text-gray-500 font-medium mt-1 leading-relaxed">
+            A simple 6-step daily system that helps you focus on what matters most — starting with your most important task every single day.
+          </p>
+        </div>
+
+        {[
+          {
+            num: 1,
+            title: 'Spend 10 minutes planning',
+            desc: 'Every evening, take just 10 minutes to plan the next day. This one small habit pays back hours of wasted morning confusion.',
+            tags: ['Clarity', 'Less stress', 'Set priorities', 'Stay focused', 'More productive'],
+            quote: 'Invest 10 minutes today to plan tomorrow — small planning, big results.',
+          },
+          {
+            num: 2,
+            title: 'Select your frog task',
+            desc: 'Pick the one task that is most important, highest impact, most difficult — and most likely to be delayed. That\'s your frog.',
+            tags: ['Most important', 'Highest impact', 'Most difficult', 'Most delayed'],
+            quote: null,
+          },
+          {
+            num: 3,
+            title: 'Add your priorities',
+            desc: 'Below your frog, select 2–3 top priority tasks for the day. Keep the list intentionally short — constraints force better decisions.',
+            tags: [],
+            quote: null,
+          },
+          {
+            num: 4,
+            title: 'Plan your day',
+            desc: 'Organise your work around meaningful activities. Block time for deep work first — meetings, messages, and admin come after.',
+            tags: [],
+            quote: null,
+          },
+          {
+            num: 5,
+            title: 'Complete tasks with focus',
+            desc: 'Work on one task at a time. Close tabs, silence notifications, and protect your focus until the frog is done.',
+            tags: [],
+            quote: null,
+          },
+          {
+            num: 6,
+            title: 'Review & improve',
+            desc: 'End your day with a quick review — what got done, what\'s pending, and what tomorrow\'s frog should be. 5 minutes of reflection compounds over time.',
+            tags: [],
+            quote: null,
+          },
+        ].map((step, idx, arr) => (
+          <div key={step.num}>
+            <div className="flex gap-4 py-4">
+              {/* Step number circle */}
+              <div className="flex-shrink-0 w-9 h-9 rounded-full border-2 border-green-200 bg-green-50 flex items-center justify-center">
+                <span className="text-sm font-black text-green-700">{step.num}</span>
+              </div>
+              {/* Content */}
+              <div className="flex-1 space-y-2">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Step {step.num}</p>
+                <h3 className="text-sm font-extrabold text-gray-900 flex items-center gap-1.5">
+                  {step.title} <span className="inline-block w-3 h-3 bg-gray-800 rounded-sm flex-shrink-0" />
+                </h3>
+                <p className="text-xs text-gray-500 font-medium leading-relaxed">{step.desc}</p>
+                {step.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {step.tags.map(tag => (
+                      <span key={tag} className="px-3 py-1 text-[10px] font-semibold text-green-800 border border-green-300 rounded-full bg-white">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {step.quote && (
+                  <div className="bg-gray-50 border border-gray-100 rounded-lg px-4 py-2.5 mt-2">
+                    <p className="text-[11px] text-gray-500 italic font-medium">{step.quote}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+            {idx < arr.length - 1 && <hr className="border-gray-100" />}
+          </div>
+        ))}
+      </div>
+
+      {/* ── What You May Notice Within Just One Week ── */}
+      <div className="bg-white rounded-2xl border border-green-100 shadow-sm p-5 space-y-4">
+        <div>
+          <h2 className="text-base font-black text-gray-900 flex items-center gap-2">
+            <span className="inline-block w-3 h-3 bg-gray-800 rounded-sm flex-shrink-0" />
+            What You May Notice Within Just One Week
+          </h2>
+          <p className="text-xs text-gray-500 font-medium mt-1.5 leading-relaxed">
+            After consistently spending 10 minutes a day planning and completing your frog task, most people start noticing real shifts — faster than they expected.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {[
+            'Better focus during work',
+            'Less confusion about what to do next',
+            'Reduced stress and mental clutter',
+            'Fewer distractions and delays',
+            'More important work getting done',
+            'Better time management',
+            'Increased productivity and consistency',
+            'Improved discipline and work habits',
+            'Feeling more in control of your day',
+            'Visible progress toward your goals',
+          ].map(item => (
+            <div key={item} className="flex items-center gap-2.5 bg-gray-50/70 border border-gray-100 rounded-lg px-3 py-2.5">
+              <span className="text-green-600 font-black text-sm flex-shrink-0">✓</span>
+              <span className="text-xs text-gray-700 font-semibold">{item}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Callout box */}
+        <div className="flex items-start gap-3 bg-green-50/60 border-l-4 border-green-500 rounded-r-xl p-4 mt-2">
+          <span className="inline-block w-3 h-3 bg-green-700 rounded-sm flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-gray-700 leading-relaxed font-medium">
+            <span className="font-extrabold text-gray-900">You don't need months to start seeing changes.</span>{' '}
+            Small actions repeated daily create big results over time. One frog a day is all it takes.
+          </p>
+        </div>
+      </div>
+
       {/* ── Goal CTA ── */}
       <div className="bg-gradient-to-br from-yellow-400/20 to-green-50 border border-yellow-300/50 rounded-2xl p-6 text-center space-y-2 shadow-sm">
         <div className="text-4xl">🚀</div>
