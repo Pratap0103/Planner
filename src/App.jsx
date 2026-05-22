@@ -13,7 +13,7 @@ import Dashboard from './pages/Dashboard/Dashboard';
 import MyProject from './pages/MyProjects/MyProject';
 import Myprojecttask from './pages/MyProjects/Myprojecttask';
 import AboutFrogPlanner from './pages/AboutFrogPlanner/AboutFrogPlanner';
-import UpcomingPlanner from './pages/UpcomingPlanner/UpcomingPlanner';
+import NextDayPlanner from './pages/UpcomingPlanner/UpcomingPlanner';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import { initializeStorage } from './utils/storageManager';
@@ -46,7 +46,7 @@ function App() {
             <Route path="my-projects" element={<MyProject />} />
             <Route path="my-projects/:projectId" element={<Myprojecttask />} />
             <Route path="about-frog-planner" element={<AboutFrogPlanner />} />
-            <Route path="upcoming-planner" element={<UpcomingPlanner />} />
+            <Route path="upcoming-planner" element={<NextDayPlanner />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

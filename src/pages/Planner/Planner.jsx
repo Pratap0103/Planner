@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Clock, ChevronLeft, ChevronRight, Plus, Trash2, Search } from 'lucide-react';
+import { Clock, ChevronLeft, ChevronRight, Plus, Trash2, Search, SlidersHorizontal, Save } from 'lucide-react';
 import DataTable from '../../components/DataTable';
 import ModalForm from '../../components/ModalForm';
 import ModalAlert from '../../components/ModalAlert';
@@ -28,6 +28,8 @@ export default function Planner() {
   const [filterDuration, setFilterDuration] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterFrog, setFilterFrog] = useState('');
+  const [selectedTaskIds, setSelectedTaskIds] = useState([]);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [alertConfig, setAlertConfig] = useState({ isOpen: false, type: 'success', title: '', message: '', onConfirm: () => {} });
 
   // Custom categories list loaded from localStorage if it exists
@@ -158,13 +160,24 @@ export default function Planner() {
   const stats = useMemo(() => {
     const dateCompletions = completions[selectedDate] || [];
     const dayTasks = masterTasks.filter(task => !task.date || task.date === selectedDate);
-    
+    const todayStr = formatDateLocal(new Date());
+    const currentHour = new Date().getHours();
+
+    // Which time slots are "past" right now (for today's overdue calc)
+    // Morning = before 12pm, Afternoon = 12pm-5pm, Evening = 5pm-9pm, Night = 9pm+
+    const passedSlots = new Set();
+    if (currentHour >= 12) passedSlots.add('Morning');
+    if (currentHour >= 17) passedSlots.add('Afternoon');
+    if (currentHour >= 21) passedSlots.add('Evening');
+
     let total = dayTasks.length;
     let completed = 0;
     let active = 0;
     let pending = 0;
     let progress = 0;
     let delayed = 0;
+    let pendingFrogs = 0;
+    let overdue = 0;
 
     dayTasks.forEach(task => {
       const isDone = dateCompletions.includes(task.id);
@@ -176,6 +189,7 @@ export default function Planner() {
           return;
         }
         active++;
+        if (task.priority === 'Frog') pendingFrogs++;
         if (task.category === 'Review' || task.category === 'Call') {
           delayed++;
         } else if (task.duration === 'Morning' || task.duration === 'Afternoon') {
@@ -183,10 +197,20 @@ export default function Planner() {
         } else {
           pending++;
         }
+
+        // Overdue calculation:
+        // - Past date → all pending tasks are overdue
+        // - Today → only pending tasks whose time slot has already passed
+        // - Future date → 0
+        if (selectedDate < todayStr) {
+          overdue++;
+        } else if (selectedDate === todayStr && passedSlots.has(task.duration)) {
+          overdue++;
+        }
       }
     });
 
-    return { total, active, completed, pending, progress, delayed };
+    return { total, active, completed, pending, progress, delayed, pendingFrogs, overdue };
   }, [masterTasks, completions, selectedDate, committedDoneTaskIds]);
 
   // Get all Frog Tasks for selected date
@@ -238,8 +262,10 @@ export default function Planner() {
 
     if (isAdding) {
       handleUpdateTaskField(taskId, 'selectValue', 'Done');
+      setSelectedTaskIds(prev => [...prev, taskId]);
     } else {
       handleUpdateTaskField(taskId, 'selectValue', 'Select');
+      setSelectedTaskIds(prev => prev.filter(id => id !== taskId));
     }
   };
 
@@ -364,8 +390,30 @@ export default function Planner() {
       {/* 2. Status Column (Dropdown Done/Pending/Select) */}
       <td className="px-2 py-2 w-[110px] whitespace-nowrap text-center">
         <select
-          value={item.status === 'Completed' ? 'Done' : (item.selectValue || 'Select')}
-          onChange={(e) => handleUpdateTaskField(item.id, 'selectValue', e.target.value)}
+          value={item.status === 'Completed' ? 'Done' : (item.selectValue === 'Done' ? 'Done' : (item.selectValue || 'Select'))}
+          onChange={(e) => {
+            const val = e.target.value;
+            handleUpdateTaskField(item.id, 'selectValue', val);
+            if (val === 'Done') {
+              // Mark as complete
+              const currentCompleted = completions[selectedDate] || [];
+              if (!currentCompleted.includes(item.id)) {
+                const updated = { ...completions, [selectedDate]: [...currentCompleted, item.id] };
+                setCompletions(updated);
+                saveCompletions(updated);
+                setSelectedTaskIds(prev => [...prev, item.id]);
+              }
+            } else {
+              // Remove from completed
+              const currentCompleted = completions[selectedDate] || [];
+              if (currentCompleted.includes(item.id)) {
+                const updated = { ...completions, [selectedDate]: currentCompleted.filter(id => id !== item.id) };
+                setCompletions(updated);
+                saveCompletions(updated);
+                setSelectedTaskIds(prev => prev.filter(id => id !== item.id));
+              }
+            }
+          }}
           className="border border-gray-300 rounded px-2 py-1 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold"
         >
           <option value="Select">Select</option>
@@ -386,7 +434,10 @@ export default function Planner() {
       {/* 4. Time */}
       <td className="px-2 py-2 w-[110px] text-gray-900 font-bold whitespace-nowrap text-xs md:text-sm">
         <div className="flex items-center justify-center gap-1.5">
-          <Clock size={14} className="text-gray-400" /> {item.time}
+          <span className="text-sm leading-none select-none">
+            {item.time === 'Morning' ? '🌅' : item.time === 'Afternoon' ? '☀️' : item.time === 'Evening' ? '🌆' : item.time === 'Night' ? '🌙' : '⏰'}
+          </span>
+          <span>{item.time}</span>
         </div>
       </td>
       {/* 5. Task Description */}
@@ -409,16 +460,15 @@ export default function Planner() {
   );
 
   const renderCard = (item) => (
-    <div key={item.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3.5">
-      <div className="flex justify-between items-start border-b border-gray-100 pb-2.5">
+    <div key={item.id} className="bg-white p-2 rounded-xl border border-gray-200 shadow-sm space-y-1.5">
+      <div className="flex justify-between items-start border-b border-gray-100 pb-1">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1.5">
             <span className="text-[10px] font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-100 uppercase tracking-widest">
               {getCategoryEmoji(item.category)} {item.category}
             </span>
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-widest ${item.status === 'Completed' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-amber-50 border-amber-100 text-amber-600'}`}>{item.status}</span>
           </div>
-          <h3 className="text-sm md:text-base font-bold text-gray-800 leading-tight text-left flex items-start gap-1.5">
+          <h3 className="text-xs md:text-sm font-bold text-gray-800 leading-tight text-left flex items-start gap-1.5">
             {item.priority === 'Frog' && (
               <span className="text-base select-none flex-shrink-0" title="Frog Task">🐸</span>
             )}
@@ -436,32 +486,53 @@ export default function Planner() {
       </div>
       <div className="pt-1 flex items-center justify-between text-gray-500">
         <div className="flex items-center gap-1.5 text-xs font-semibold">
-          <Clock size={13} />
+          <span className="text-sm leading-none select-none">
+            {item.time === 'Morning' ? '🌅' : item.time === 'Afternoon' ? '☀️' : item.time === 'Evening' ? '🌆' : item.time === 'Night' ? '🌙' : '⏰'}
+          </span>
           <span>{item.time}</span>
         </div>
       </div>
       {/* Mobile Card inputs for Status & Remarks */}
-      <div className="pt-2.5 border-t border-gray-100 flex flex-col gap-2.5">
+      <div className="pt-1.5 border-t border-gray-100 flex flex-col gap-1.5">
+      {/* Mobile Card Status select — same fix */}
         <div className="flex items-center justify-between text-xs md:text-sm">
           <span className="font-bold text-gray-500">Status:</span>
           <select
-            value={item.status === 'Completed' ? 'Done' : (item.selectValue || 'Select')}
-            onChange={(e) => handleUpdateTaskField(item.id, 'selectValue', e.target.value)}
-            className="border border-gray-300 rounded px-2 py-1 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold"
+            value={item.status === 'Completed' ? 'Done' : (item.selectValue === 'Done' ? 'Done' : (item.selectValue || 'Select'))}
+            onChange={(e) => {
+              const val = e.target.value;
+              handleUpdateTaskField(item.id, 'selectValue', val);
+              if (val === 'Done') {
+                const currentCompleted = completions[selectedDate] || [];
+                if (!currentCompleted.includes(item.id)) {
+                  const updated = { ...completions, [selectedDate]: [...currentCompleted, item.id] };
+                  setCompletions(updated);
+                  saveCompletions(updated);
+                }
+              } else {
+                const currentCompleted = completions[selectedDate] || [];
+                if (currentCompleted.includes(item.id)) {
+                  const updated = { ...completions, [selectedDate]: currentCompleted.filter(id => id !== item.id) };
+                  setCompletions(updated);
+                  saveCompletions(updated);
+                }
+              }
+            }}
+            className="border border-gray-300 rounded px-2 py-0.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold"
           >
             <option value="Select">Select</option>
             <option value="Pending">Pending</option>
             <option value="Done">Done</option>
           </select>
         </div>
-        <div className="flex flex-col gap-1 text-xs md:text-sm text-left">
+        <div className="flex flex-col gap-0.5 text-xs md:text-sm text-left">
           <span className="font-bold text-gray-500">Remarks:</span>
           <input
             type="text"
             value={item.remarks || ''}
             onChange={(e) => handleUpdateTaskField(item.id, 'remarks', e.target.value)}
             placeholder="Enter remarks..."
-            className="border border-gray-300 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 w-full font-medium"
+            className="border border-gray-300 rounded px-2.5 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 w-full font-medium"
           />
         </div>
       </div>
@@ -470,100 +541,93 @@ export default function Planner() {
 
   return (
     <div className="p-0 sm:p-2 md:p-4 space-y-2 md:space-y-3 flex flex-col h-full min-h-0">
-      {/* Status Filter KPI Cards Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
-        
-        {/* Total Card */}
-        <button
-          onClick={() => setActiveFilter('Total')}
-          className={`py-2 px-3 rounded-xl border text-center transition-all flex flex-col justify-center items-center h-[54px] shadow-sm ${
-            activeFilter === 'Total'
-              ? 'bg-slate-700 border-slate-800 text-white font-extrabold shadow'
-              : 'bg-slate-50 border-slate-100 text-slate-700 font-bold hover:bg-slate-100'
-          }`}
-        >
-          <span className="text-sm md:text-base leading-none">{stats.total}</span>
-          <span className="text-[9px] uppercase tracking-wider mt-0.5 opacity-80">Total</span>
-        </button>
-
-        {/* Active Card */}
-        <button
-          onClick={() => setActiveFilter('Active')}
-          className={`py-2 px-3 rounded-xl border text-center transition-all flex flex-col justify-center items-center h-[54px] shadow-sm ${
-            activeFilter === 'Active'
-              ? 'bg-blue-600 border-blue-700 text-white font-extrabold shadow'
-              : 'bg-blue-50/70 border-blue-100 text-blue-700 font-bold hover:bg-blue-100'
-          }`}
-        >
-          <span className="text-sm md:text-base leading-none">{stats.active}</span>
-          <span className="text-[9px] uppercase tracking-wider mt-0.5 opacity-85">Active</span>
-        </button>
-
-        {/* Completed Card */}
-        <button
-          onClick={() => setActiveFilter('Completed')}
-          className={`py-2 px-3 rounded-xl border text-center transition-all flex flex-col justify-center items-center h-[54px] shadow-sm ${
-            activeFilter === 'Completed'
-              ? 'bg-emerald-600 border-emerald-700 text-white font-extrabold shadow'
-              : 'bg-emerald-50/70 border-emerald-100 text-emerald-700 font-bold hover:bg-emerald-100'
-          }`}
-        >
-          <span className="text-sm md:text-base leading-none">{stats.completed}</span>
-          <span className="text-[9px] uppercase tracking-wider mt-0.5 opacity-85">Completed</span>
-        </button>
-
-        {/* Pending Card */}
-        <button
-          onClick={() => setActiveFilter('Pending')}
-          className={`py-2 px-3 rounded-xl border text-center transition-all flex flex-col justify-center items-center h-[54px] shadow-sm ${
-            activeFilter === 'Pending'
-              ? 'bg-amber-600 border-amber-700 text-white font-extrabold shadow'
-              : 'bg-amber-50/70 border-amber-100 text-amber-700 font-bold hover:bg-amber-100'
-          }`}
-        >
-          <span className="text-sm md:text-base leading-none">{stats.pending}</span>
-          <span className="text-[9px] uppercase tracking-wider mt-0.5 opacity-85">Pending</span>
-        </button>
-
-        {/* Progress Card */}
-        <button
-          onClick={() => setActiveFilter('Progress')}
-          className={`py-2 px-3 rounded-xl border text-center transition-all flex flex-col justify-center items-center h-[54px] shadow-sm ${
-            activeFilter === 'Progress'
-              ? 'bg-indigo-600 border-indigo-700 text-white font-extrabold shadow'
-              : 'bg-indigo-50/70 border-indigo-100 text-indigo-750 font-bold hover:bg-indigo-100'
-          }`}
-        >
-          <span className="text-sm md:text-base leading-none">{stats.progress}</span>
-          <span className="text-[9px] uppercase tracking-wider mt-0.5 opacity-85">Progress</span>
-        </button>
-
-        {/* Delayed Card */}
-        <button
-          onClick={() => setActiveFilter('Delayed')}
-          className={`py-2 px-3 rounded-xl border text-center transition-all flex flex-col justify-center items-center h-[54px] shadow-sm ${
-            activeFilter === 'Delayed'
-              ? 'bg-rose-600 border-rose-700 text-white font-extrabold shadow'
-              : 'bg-rose-50/70 border-rose-100 text-rose-700 font-bold hover:bg-rose-100'
-          }`}
-        >
-          <span className="text-sm md:text-base leading-none">{stats.delayed}</span>
-          <span className="text-[9px] uppercase tracking-wider mt-0.5 opacity-85">Delayed</span>
-        </button>
-
+      {/* ── Today's 5 KPI Count Cards ── */}
+      <div className="grid grid-cols-5 gap-1.5 flex-shrink-0">
+        {[
+          {
+            label: 'Total',
+            value: stats.total,
+            filter: 'Total',
+            mobileLabel: 'Total',
+            activeCls: 'bg-slate-700 border-slate-800 text-white',
+            inactiveCls: 'bg-slate-50 border-slate-200 text-slate-700',
+            valueCls: 'text-slate-800'
+          },
+          {
+            label: 'Completed',
+            value: stats.completed,
+            filter: 'Completed',
+            mobileLabel: 'Done',
+            activeCls: 'bg-emerald-600 border-emerald-700 text-white',
+            inactiveCls: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+            valueCls: 'text-emerald-700'
+          },
+          {
+            label: 'Pending',
+            value: stats.active - stats.pendingFrogs,
+            filter: 'Active',
+            mobileLabel: 'Pending',
+            activeCls: 'bg-amber-600 border-amber-700 text-white',
+            inactiveCls: 'bg-amber-50 border-amber-200 text-amber-700',
+            valueCls: 'text-amber-700'
+          },
+          {
+            label: '🐸 Frogs',
+            value: stats.pendingFrogs,
+            filter: null,
+            mobileLabel: '🐸 Frogs',
+            activeCls: 'bg-green-700 border-green-800 text-white',
+            inactiveCls: 'bg-green-50 border-green-200 text-green-800',
+            valueCls: 'text-green-800'
+          },
+          {
+            label: 'Overdue',
+            value: stats.overdue,
+            filter: null,
+            mobileLabel: 'Overdue',
+            activeCls: 'bg-rose-600 border-rose-700 text-white',
+            inactiveCls: 'bg-rose-50 border-rose-200 text-rose-700',
+            valueCls: 'text-rose-700'
+          },
+        ].map(({ label, value, filter, mobileLabel, activeCls, inactiveCls, valueCls }) => {
+          const isActive = filter && activeFilter === filter;
+          return (
+            <button
+              key={label}
+              onClick={() => filter && setActiveFilter(filter)}
+              className={`flex flex-col items-center justify-center rounded-xl border transition-all font-bold w-full shadow-sm
+                h-[44px] md:h-[58px]
+                ${ isActive ? activeCls : `${inactiveCls} hover:shadow-md` }
+                ${ !filter ? 'cursor-default' : 'active:scale-95' }`}
+            >
+              {/* Number */}
+              <span className={`text-sm md:text-xl font-extrabold leading-none ${ isActive ? 'text-white' : valueCls }`}>
+                {value}
+              </span>
+              {/* Label */}
+              <span className={`text-[7px] md:text-[9px] uppercase tracking-tight leading-none mt-0.5 ${ isActive ? 'text-white/80' : 'opacity-70' }`}>
+                <span className="md:hidden">{mobileLabel}</span>
+                <span className="hidden md:inline">{label}</span>
+              </span>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Weekly Date Selector */}
-      <div className="flex flex-col w-full">
-        <div className="flex items-center gap-1 sm:gap-2">
+      {/* Weekly Date Selector — compact on mobile */}
+      <div className="flex flex-col w-full flex-shrink-0">
+        <div className="flex items-center gap-1">
+          {/* Prev */}
           <button 
             onClick={() => setWeekOffset(prev => prev - 1)}
-            className="p-1 sm:px-1.5 rounded-md md:rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-300 transition-colors flex-shrink-0 h-[38px] md:h-[44px] flex items-center justify-center shadow-sm"
+            className="flex-shrink-0 flex items-center justify-center rounded border border-gray-200 bg-white text-gray-500 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-300 transition-colors shadow-sm h-[30px] w-[24px] md:h-[44px] md:w-[36px]"
           >
-            <ChevronLeft size={16} />
+            <ChevronLeft size={13} className="md:hidden" />
+            <ChevronLeft size={16} className="hidden md:block" />
           </button>
           
-          <div className="flex-1 flex overflow-x-auto hide-scrollbar gap-1.5 py-1 items-center">
+          {/* Day buttons */}
+          <div className="flex-1 flex gap-1 md:gap-1.5 items-center">
             {weekDates.map((date, idx) => {
               const dateStr = formatDateLocal(date);
               const isSelected = selectedDate === dateStr;
@@ -574,19 +638,16 @@ export default function Planner() {
               let textDayNumberClass = '';
 
               if (isTodayDate) {
-                // Today's date in solid blue (highlighted)
                 btnClass = isSelected
                   ? 'bg-blue-600 border-blue-700 text-white shadow-md shadow-blue-200 scale-105'
                   : 'bg-blue-500 border-blue-500 text-white shadow-sm hover:bg-blue-600';
                 textDayNameClass = 'text-blue-100 font-semibold';
                 textDayNumberClass = 'text-white';
               } else if (isSelected) {
-                // Selected date (faded blue, active)
                 btnClass = 'bg-sky-100 border-sky-300 text-sky-700 font-bold';
-                textDayNameClass = 'text-sky-650';
+                textDayNameClass = 'text-sky-600';
                 textDayNumberClass = 'text-sky-900';
               } else {
-                // Other dates (faded blue, inactive)
                 btnClass = 'bg-sky-50/40 border-sky-100 text-sky-500 hover:bg-sky-100/30 hover:border-sky-200';
                 textDayNameClass = 'text-sky-400 font-medium';
                 textDayNumberClass = 'text-sky-700 font-bold';
@@ -596,130 +657,187 @@ export default function Planner() {
                 <button
                   key={idx}
                   onClick={() => setSelectedDate(dateStr)}
-                  className={`flex flex-col items-center justify-center flex-1 min-w-[42px] md:min-w-[56px] py-1 rounded-md md:rounded-lg border transition-all ${btnClass}`}
+                  className={`flex flex-col items-center justify-center flex-1 border transition-all rounded md:rounded-lg
+                    py-0.5 md:py-1 ${btnClass}`}
                 >
-                  <span className={`text-[8px] md:text-[9px] uppercase tracking-wider ${textDayNameClass}`}>
+                  {/* Day name — very small on mobile */}
+                  <span className={`text-[6px] md:text-[9px] uppercase tracking-wide leading-none ${textDayNameClass}`}>
                     {getDayName(date)}
                   </span>
-                  <span className={`text-sm md:text-base leading-none mt-0.5 ${textDayNumberClass}`}>
+                  {/* Day number */}
+                  <span className={`text-[11px] md:text-base font-bold leading-tight mt-0.5 ${textDayNumberClass}`}>
                     {getDayNumber(date)}
                   </span>
-                  {isTodayDate && !isSelected && <span className="w-1 h-1 rounded-full bg-white mt-0.5 animate-pulse"></span>}
+                  {/* Today indicator dot */}
+                  {isTodayDate && !isSelected && (
+                    <span className="w-[3px] h-[3px] rounded-full bg-white mt-0.5 animate-pulse" />
+                  )}
                 </button>
               );
             })}
           </div>
 
+          {/* Next */}
           <button 
             onClick={() => setWeekOffset(prev => prev + 1)}
-            className="p-1 sm:px-1.5 rounded-md md:rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-300 transition-colors flex-shrink-0 h-[38px] md:h-[44px] flex items-center justify-center shadow-sm"
+            className="flex-shrink-0 flex items-center justify-center rounded border border-gray-200 bg-white text-gray-500 hover:bg-sky-50 hover:text-sky-600 hover:border-sky-300 transition-colors shadow-sm h-[30px] w-[24px] md:h-[44px] md:w-[36px]"
           >
-            <ChevronRight size={16} />
+            <ChevronRight size={13} className="md:hidden" />
+            <ChevronRight size={16} className="hidden md:block" />
           </button>
         </div>
       </div>
 
       {/* Main Content Area */}
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col flex-1 min-h-0 overflow-hidden mt-0">
-        <div className="p-3 sm:p-4 border-b border-gray-100 flex flex-wrap lg:flex-nowrap items-center justify-between gap-3 bg-white">
-          {/* 1. Title */}
-          <h2 className="text-sm font-extrabold text-gray-850 shrink-0">
-            Tasks for {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-          </h2>
+        {/* ══════════════════════════════════════════
+             TOOLBAR — Mobile: 2-row  |  Desktop: 1-row
+        ══════════════════════════════════════════ */}
+        <div className="border-b border-gray-100 bg-white">
 
-          {/* 2. Filters */}
-          <div className="flex flex-wrap items-center gap-2 flex-1 justify-center lg:justify-start lg:ml-4">
-            {/* Search Input */}
-            <div className="relative w-44 md:w-52">
-              <Search className="absolute left-2.5 top-1.5 w-3.5 h-3.5 text-gray-400" />
+          {/* ── ROW 1: always visible ── */}
+          <div className="px-3 py-2 flex items-center gap-2">
+
+            {/* Title (desktop only) */}
+            <h2 className="hidden md:block text-xs font-extrabold text-gray-800 whitespace-nowrap flex-shrink-0">
+              Tasks for {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            </h2>
+            <div className="hidden md:block h-4 w-px bg-gray-200 flex-shrink-0" />
+
+            {/* Search — full width on mobile */}
+            <div className="relative flex-1 md:flex-shrink-0 md:flex-1">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search tasks..."
-                className="w-full pl-8 pr-2.5 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 h-[28px]"
+                className="pl-6 pr-2 py-0.5 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 h-[32px] md:h-[26px] w-full"
               />
             </div>
 
-            {/* Time Drop-down */}
-            <select
-              value={filterDuration}
-              onChange={(e) => setFilterDuration(e.target.value)}
-              className="border border-gray-300 rounded-lg text-xs px-2 py-0.5 bg-white text-gray-750 font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500 h-[28px]"
-            >
-              <option value="">All Times</option>
-              {durationOptions.map(opt => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
-
-            {/* Category Drop-down */}
-            <select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className="border border-gray-300 rounded-lg text-xs px-2 py-0.5 bg-white text-gray-750 font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500 h-[28px]"
-            >
-              <option value="">All Categories</option>
-              {customCategories.map(opt => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
-
-            {/* Frog Task Toggle Button */}
+            {/* Mobile ONLY: Filter toggle button
+                - Single click: show/hide filter panel
+                - Double click: clear all active filters */}
             <button
-              onClick={() => setFilterFrog(prev => prev === 'Frog' ? '' : 'Frog')}
-              className={`px-2.5 py-0.5 rounded-lg text-xs font-bold transition-all border flex items-center gap-1.5 h-[28px] ${
-                filterFrog === 'Frog'
-                  ? 'bg-emerald-50 border-emerald-250 text-emerald-700 shadow-sm'
-                  : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+              onClick={() => setShowMobileFilters(prev => !prev)}
+              onDoubleClick={() => {
+                setSearchQuery('');
+                setFilterDuration('');
+                setFilterCategory('');
+                setFilterFrog('');
+                setShowMobileFilters(false);
+              }}
+              className={`md:hidden relative flex-shrink-0 w-8 h-8 rounded-lg border flex items-center justify-center transition-all ${
+                showMobileFilters || filterDuration || filterCategory || filterFrog
+                  ? 'bg-indigo-50 border-indigo-300 text-indigo-600'
+                  : 'bg-white border-gray-300 text-gray-500'
               }`}
+              title="Tap to filter · Double-tap to clear all"
             >
-              <span>🐸 Frog Tasks</span>
-              {filterFrog === 'Frog' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>}
+              <SlidersHorizontal className="w-4 h-4" />
+              {(filterDuration || filterCategory || filterFrog) && (
+                <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-red-500" />
+              )}
             </button>
 
-            {/* Reset Filters button if any are active */}
-            {(searchQuery || filterDuration || filterCategory || filterFrog) && (
-              <button
-                onClick={() => {
-                  setSearchQuery('');
-                  setFilterDuration('');
-                  setFilterCategory('');
-                  setFilterFrog('');
-                }}
-                className="text-[10px] text-red-500 hover:text-red-700 font-bold hover:underline ml-1"
-              >
-                Clear
+            {/* Desktop: filter controls inline */}
+            <div className="hidden md:flex items-center gap-2">
+              <select value={filterDuration} onChange={(e) => setFilterDuration(e.target.value)}
+                className="border border-gray-300 rounded-lg text-xs px-1.5 bg-white text-gray-700 font-semibold focus:outline-none h-[26px]">
+                <option value="">All Times</option>
+                {durationOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              </select>
+              <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}
+                className="border border-gray-300 rounded-lg text-xs px-1.5 bg-white text-gray-700 font-semibold focus:outline-none h-[26px]">
+                <option value="">All Categories</option>
+                {customCategories.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              </select>
+              <button onClick={() => setFilterFrog(prev => prev === 'Frog' ? '' : 'Frog')}
+                className={`px-2 h-[26px] rounded-lg text-xs font-bold border flex items-center gap-1 transition-all ${
+                  filterFrog === 'Frog' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                }`}>
+                🐸 Frog Tasks
+                {filterFrog === 'Frog' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />}
               </button>
-            )}
-          </div>
+              {(searchQuery || filterDuration || filterCategory || filterFrog) && (
+                <button onClick={() => { setSearchQuery(''); setFilterDuration(''); setFilterCategory(''); setFilterFrog(''); }}
+                  className="text-[10px] text-red-500 hover:text-red-700 font-bold hover:underline">Clear</button>
+              )}
+            </div>
 
-          {/* 3. Actions */}
-          <div className="flex items-center gap-2 shrink-0">
+
+            {/* Selection counter (desktop) */}
+            {selectedTaskIds.length > 0 && (
+              <span className="flex-shrink-0 px-2 h-[26px] hidden md:flex items-center bg-emerald-600 text-white text-[10px] font-extrabold rounded-lg shadow-sm">
+                {selectedTaskIds.length} Selected
+              </span>
+            )}
+
+            {/* Frog Info (desktop only) */}
             {allTodayFrogTasks.length > 0 && (
-              <button
-                onClick={() => setShowFrogModal(true)}
-                className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-705 rounded-lg flex items-center justify-center px-2.5 py-1 text-[11px] font-bold shadow-sm transition active:scale-95 gap-1 h-[28px]"
-              >
-                <span>🐸 Frog Info ({allTodayFrogTasks.filter(t => t.isCompleted).length}/{allTodayFrogTasks.length})</span>
+              <button onClick={() => setShowFrogModal(true)}
+                className="hidden md:flex flex-shrink-0 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 rounded-lg items-center gap-1 px-2 h-[26px] text-xs font-bold shadow-sm transition active:scale-95">
+                🐸 Frog Info ({allTodayFrogTasks.filter(t => t.isCompleted).length}/{allTodayFrogTasks.length})
               </button>
             )}
 
-            <button 
-              onClick={handleSaveAll}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center justify-center px-3.5 py-1 text-xs font-bold shadow-sm transition active:scale-95 h-[28px]"
-            >
-              Save
+            {/* Save — icon on mobile, text on desktop */}
+            <button onClick={handleSaveAll}
+              className="flex-shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center justify-center md:px-3 w-8 md:w-auto h-8 md:h-[26px] text-xs font-bold shadow-sm transition active:scale-95"
+              title="Save">
+              <Save className="w-4 h-4 md:hidden" />
+              <span className="hidden md:inline">Save</span>
             </button>
 
-            <button 
-              onClick={handleAddTaskClick}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center justify-center px-3.5 py-1 text-xs font-semibold shadow-sm transition active:scale-95 h-[28px]"
-            >
-              Add Task
+            {/* Add Task — icon on mobile, text on desktop */}
+            <button onClick={handleAddTaskClick}
+              className="flex-shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center justify-center md:px-3 w-8 md:w-auto h-8 md:h-[26px] text-xs font-semibold shadow-sm transition active:scale-95"
+              title="Add Task">
+              <Plus className="w-4 h-4 md:hidden" />
+              <span className="hidden md:inline">Add Task</span>
             </button>
           </div>
+
+          {/* ── ROW 2 (mobile only): filter panel — 2 sub-rows ── */}
+          {showMobileFilters && (
+            <div className="md:hidden px-3 pb-2 flex flex-col gap-2">
+
+              {/* Sub-row A: Time + Category */}
+              <div className="flex items-center gap-2">
+                <select value={filterDuration} onChange={(e) => setFilterDuration(e.target.value)}
+                  className="flex-1 border border-gray-300 rounded-lg text-xs px-2 bg-white text-gray-700 font-semibold focus:outline-none h-[32px]">
+                  <option value="">All Times</option>
+                  {durationOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+                <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}
+                  className="flex-1 border border-gray-300 rounded-lg text-xs px-2 bg-white text-gray-700 font-semibold focus:outline-none h-[32px]">
+                  <option value="">All Categories</option>
+                  {customCategories.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+              </div>
+
+              {/* Sub-row B: Frog toggle + Frog Info */}
+              <div className="flex items-center gap-2">
+                <button onClick={() => setFilterFrog(prev => prev === 'Frog' ? '' : 'Frog')}
+                  className={`flex-1 h-[32px] rounded-lg text-xs font-bold border flex items-center justify-center gap-1.5 transition-all ${
+                    filterFrog === 'Frog' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-white border-gray-300 text-gray-500'
+                  }`}>
+                  🐸 Frog Tasks
+                  {filterFrog === 'Frog' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />}
+                </button>
+                {allTodayFrogTasks.length > 0 && (
+                  <button onClick={() => setShowFrogModal(true)}
+                    className="flex-1 h-[32px] bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg flex items-center justify-center gap-1 text-xs font-bold">
+                    🐸 Frog Info ({allTodayFrogTasks.filter(t => t.isCompleted).length}/{allTodayFrogTasks.length})
+                  </button>
+                )}
+              </div>
+
+            </div>
+          )}
         </div>
+
         
         <div className="flex-1 overflow-hidden flex flex-col min-h-0 pt-1">
           <DataTable 
@@ -910,7 +1028,7 @@ export default function Planner() {
 
       {/* FROG TASK DETAILS DIALOG MODAL */}
       {showFrogModal && (
-        <div className="fixed inset-0 lg:left-56 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200] p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden border border-gray-150 animate-in zoom-in-95 duration-200" style={{ maxHeight: '80vh' }}>
             
             {/* Header */}

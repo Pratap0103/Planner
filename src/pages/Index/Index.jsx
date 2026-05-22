@@ -164,7 +164,12 @@ export default function Index() {
         </div>
       </td>
       <td className="px-4 py-3.5 text-gray-750 whitespace-nowrap text-xs md:text-sm font-bold">
-        {item.duration}
+        <div className="flex items-center justify-center gap-1.5">
+          <span className="text-sm leading-none select-none">
+            {item.duration === 'Morning' ? '🌅' : item.duration === 'Afternoon' ? '☀️' : item.duration === 'Evening' ? '🌆' : item.duration === 'Night' ? '🌙' : '⏰'}
+          </span>
+          <span>{item.duration}</span>
+        </div>
       </td>
       <td className="px-4 py-3.5 text-gray-700 whitespace-nowrap text-xs md:text-sm text-center">
         <span className="px-2.5 py-1 bg-indigo-50 text-indigo-605 border border-indigo-100 rounded text-[11px] font-bold uppercase">
@@ -181,7 +186,12 @@ export default function Index() {
           <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 uppercase tracking-wider">
             {getCategoryEmoji(item.category)} {item.category}
           </span>
-          <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded uppercase tracking-wider">{item.duration}</span>
+          <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
+            <span className="text-sm leading-none select-none">
+              {item.duration === 'Morning' ? '🌅' : item.duration === 'Afternoon' ? '☀️' : item.duration === 'Evening' ? '🌆' : item.duration === 'Night' ? '🌙' : '⏰'}
+            </span>
+            {item.duration}
+          </span>
         </div>
         <div className="flex gap-2">
           <button onClick={() => handleEdit(item)} className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg" title="Edit">

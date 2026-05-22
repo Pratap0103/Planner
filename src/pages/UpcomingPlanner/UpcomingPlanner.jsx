@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Clock, Plus, Search, Trash2, Pencil } from 'lucide-react';
+import { Clock, Plus, Search, Trash2, Pencil, SlidersHorizontal, CalendarDays } from 'lucide-react';
+import { getTasks as getMasterTasks, saveTasks as saveMasterTasks } from '../../utils/storageManager';
 import DataTable from '../../components/DataTable';
 import ModalForm from '../../components/ModalForm';
 import ModalAlert from '../../components/ModalAlert';
-import { getCategoryEmoji } from '../../utils/helpers';
+import { getCategoryEmoji, formatDate } from '../../utils/helpers';
 
 const STORAGE_KEY = 'upcoming_planner_tasks';
 
@@ -36,16 +37,15 @@ const saveTasks = (tasks) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
 };
 
-export default function UpcomingPlanner() {
+export default function NextDayPlanner() {
   const [tasks, setTasks] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [activeFilter, setActiveFilter] = useState('Total');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterDuration, setFilterDuration] = useState('');
-  const [filterCategory, setFilterCategory] = useState('');
-  const [filterFromDate, setFilterFromDate] = useState('');
-  const [filterToDate, setFilterToDate] = useState('');
+  const [inlineDate, setInlineDate] = useState('');
+  const [inlineDesc, setInlineDesc] = useState('');
+  const [inlineTime, setInlineTime] = useState('Morning');
+  const [inlineCat, setInlineCat] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(100);
   const [alertConfig, setAlertConfig] = useState({ isOpen: false, type: 'success', title: '', message: '', onConfirm: () => {} });
@@ -68,7 +68,7 @@ export default function UpcomingPlanner() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, filterDuration, filterCategory, filterFromDate, filterToDate, activeFilter]);
+  }, [activeFilter]);
 
   const showAlert = (type, title, message) => {
     setAlertConfig({ isOpen: true, type, title, message, onConfirm: () => {} });
@@ -104,17 +104,8 @@ export default function UpcomingPlanner() {
     else if (activeFilter === 'Completed') result = result.filter(t => t.status === 'Completed');
     else if (activeFilter === 'Pending') result = result.filter(t => t.status === 'Pending');
 
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(t => t.description.toLowerCase().includes(q));
-    }
-    if (filterDuration) result = result.filter(t => t.duration === filterDuration);
-    if (filterCategory) result = result.filter(t => t.category === filterCategory);
-    if (filterFromDate) result = result.filter(t => t.date && t.date >= filterFromDate);
-    if (filterToDate)   result = result.filter(t => t.date && t.date <= filterToDate);
-
     return result;
-  }, [tasks, activeFilter, searchQuery, filterDuration, filterCategory, filterFromDate, filterToDate]);
+  }, [tasks, activeFilter]);
 
   const stats = useMemo(() => {
     const total = tasks.length;
@@ -214,11 +205,37 @@ export default function UpcomingPlanner() {
     setShowModal(false);
   };
 
-  const handleSaveAll = () => {
-    saveTasks(tasks);
-    showAlert('success', 'Saved!', 'All changes have been saved.');
+  // --- Inline Form Handlers ---
+  const handleInlineAddTask = () => {
+    if (!inlineDesc.trim() || !inlineDate) return;
+    const newTask = {
+      id: `UPTSK-${Date.now()}`,
+      description: inlineDesc.trim(),
+      duration: inlineTime,
+      category: inlineCat || customCategories[0] || 'Work',
+      priority: '',
+      date: inlineDate,
+      status: 'Pending',
+      selectValue: 'Pending',
+      timestamp: new Date().toISOString()
+    };
+    const updated = [...tasks, newTask];
+    setTasks(updated);
+    saveTasks(updated);
+    setInlineDesc(''); // reset only description to allow fast entry
   };
 
+  const handleSaveAllToMaster = () => {
+    if (tasks.length === 0) return;
+    const masterTasks = getMasterTasks() || [];
+    const updatedMaster = [...masterTasks, ...tasks];
+    saveMasterTasks(updatedMaster);
+    
+    // Clear Upcoming Planner
+    setTasks([]);
+    saveTasks([]);
+    showAlert('success', 'Tasks Saved', 'All tasks have been moved to All Tasks successfully.');
+  };
   const renderRow = (item) => (
     <tr key={item.id} className="hover:bg-gray-50 transition-colors text-center text-sm border-b border-gray-100">
       {/* Action */}
@@ -242,12 +259,15 @@ export default function UpcomingPlanner() {
       </td>
       {/* Date */}
       <td className="px-2 py-2 w-[120px] text-gray-700 font-semibold whitespace-nowrap text-xs">
-        {item.date ? new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+        {item.date ? formatDate(item.date) : '—'}
       </td>
       {/* Time */}
       <td className="px-2 py-2 w-[110px] text-gray-900 font-bold whitespace-nowrap text-xs md:text-sm">
         <div className="flex items-center justify-center gap-1.5">
-          <Clock size={14} className="text-gray-400" /> {item.time}
+          <span className="text-sm leading-none select-none">
+            {item.time === 'Morning' ? '🌅' : item.time === 'Afternoon' ? '☀️' : item.time === 'Evening' ? '🌆' : item.time === 'Night' ? '🌙' : '⏰'}
+          </span>
+          <span>{item.time}</span>
         </div>
       </td>
       {/* Task Description */}
@@ -268,16 +288,15 @@ export default function UpcomingPlanner() {
   );
 
   const renderCard = (item) => (
-    <div key={item.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3.5">
-      <div className="flex justify-between items-start border-b border-gray-100 pb-2.5">
+    <div key={item.id} className="bg-white p-2 rounded-xl border border-gray-200 shadow-sm space-y-1.5">
+      <div className="flex justify-between items-start border-b border-gray-100 pb-1">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1.5">
             <span className="text-[10px] font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded border border-sky-100 uppercase tracking-widest">
               {getCategoryEmoji(item.category)} {item.category}
             </span>
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-widest ${item.status === 'Completed' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-amber-50 border-amber-100 text-amber-600'}`}>{item.status}</span>
           </div>
-          <h3 className="text-sm md:text-base font-bold text-gray-800 leading-tight text-left flex items-start gap-1.5">
+          <h3 className="text-xs md:text-sm font-bold text-gray-800 leading-tight text-left flex items-start gap-1.5">
             {item.priority === 'Frog' && <span className="text-base select-none flex-shrink-0" title="Frog Task">🐸</span>}
             <span>{item.description}</span>
           </h3>
@@ -293,11 +312,13 @@ export default function UpcomingPlanner() {
       </div>
       <div className="pt-1 flex items-center justify-between text-gray-500">
         <div className="flex items-center gap-1.5 text-xs font-semibold">
-          <Clock size={13} />
+          <span className="text-sm leading-none select-none">
+            {item.time === 'Morning' ? '🌅' : item.time === 'Afternoon' ? '☀️' : item.time === 'Evening' ? '🌆' : item.time === 'Night' ? '🌙' : '⏰'}
+          </span>
           <span>{item.time}</span>
         </div>
         <span className="text-[10px] text-gray-400 font-semibold">
-          {item.date ? new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
+          {item.date ? formatDate(item.date) : ''}
         </span>
       </div>
 
@@ -306,97 +327,79 @@ export default function UpcomingPlanner() {
 
   return (
     <div className="p-0 sm:p-2 md:p-4 space-y-2 md:space-y-3 flex flex-col h-full min-h-0">
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-        {[
-          { key: 'Total', val: stats.total, active: 'bg-slate-700 border-slate-800 text-white', inactive: 'bg-slate-50 border-slate-100 text-slate-700' },
-          { key: 'Active', val: stats.active, active: 'bg-blue-600 border-blue-700 text-white', inactive: 'bg-blue-50/70 border-blue-100 text-blue-700' },
-          { key: 'Completed', val: stats.completed, active: 'bg-emerald-600 border-emerald-700 text-white', inactive: 'bg-emerald-50/70 border-emerald-100 text-emerald-700' },
-          { key: 'Pending', val: stats.pending, active: 'bg-amber-600 border-amber-700 text-white', inactive: 'bg-amber-50/70 border-amber-100 text-amber-700' },
-        ].map(({ key, val, active, inactive }) => (
-          <button
-            key={key}
-            onClick={() => setActiveFilter(key)}
-            className={`py-2 px-3 rounded-xl border text-center transition-all flex flex-col justify-center items-center h-[54px] shadow-sm font-bold hover:opacity-90 ${activeFilter === key ? active : inactive}`}
-          >
-            <span className="text-sm md:text-base leading-none">{val}</span>
-            <span className="text-[9px] uppercase tracking-wider mt-0.5 opacity-80">{key}</span>
-          </button>
-        ))}
-      </div>
 
       {/* Main Content */}
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col flex-1 min-h-0 overflow-hidden">
-        <div className="p-3 sm:p-4 border-b border-gray-100 flex flex-wrap lg:flex-nowrap items-center justify-between gap-3 bg-white">
-          {/* Filters */}
-          <div className="flex flex-wrap items-center gap-2 flex-1 justify-center lg:justify-start">
-            {/* Search */}
-            <div className="relative w-40">
-              <Search className="absolute left-2.5 top-1.5 w-3.5 h-3.5 text-gray-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search tasks..."
-                className="w-full pl-8 pr-2.5 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 h-[28px]"
+        {/* ── INLINE TASK ENTRY FORM (Replaces Filters) ── */}
+        <div className="border-b border-gray-100 flex flex-col shrink-0 bg-indigo-50/20">
+          <div className="px-3 py-2 flex flex-wrap md:flex-nowrap items-center gap-2">
+            
+            {/* Date */}
+            <div className="flex-shrink-0 w-full md:w-36 relative">
+              <CalendarDays className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+              <input 
+                type="date" 
+                value={inlineDate} 
+                onChange={e => setInlineDate(e.target.value)}
+                className="w-full pl-8 pr-2 border border-gray-300 rounded-lg text-xs h-[32px] md:h-[28px] focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white" 
               />
             </div>
 
-            {/* From – To Date (single inline group) */}
-            <div className="flex items-center h-[28px] border border-gray-300 rounded-lg overflow-hidden bg-white divide-x divide-gray-300">
-              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide px-2 whitespace-nowrap bg-gray-50">From</span>
+            {/* Description */}
+            <div className="relative flex-1 w-full min-w-[200px]">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" />
               <input
-                type="date"
-                value={filterFromDate}
-                onChange={(e) => setFilterFromDate(e.target.value)}
-                className="text-xs px-2 h-full bg-white text-gray-700 font-semibold focus:outline-none"
-              />
-              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide px-2 whitespace-nowrap bg-gray-50">To</span>
-              <input
-                type="date"
-                value={filterToDate}
-                onChange={(e) => setFilterToDate(e.target.value)}
-                className="text-xs px-2 h-full bg-white text-gray-700 font-semibold focus:outline-none"
+                type="text"
+                value={inlineDesc}
+                onChange={(e) => setInlineDesc(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleInlineAddTask(); }}
+                placeholder="Task Description..."
+                className="pl-7 pr-3 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 h-[32px] md:h-[28px] w-full"
               />
             </div>
 
             {/* Time */}
             <select
-              value={filterDuration}
-              onChange={(e) => setFilterDuration(e.target.value)}
-              className="border border-gray-300 rounded-lg text-xs px-2 py-0.5 bg-white text-gray-750 font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500 h-[28px]"
+              value={inlineTime}
+              onChange={(e) => setInlineTime(e.target.value)}
+              className="border border-gray-300 rounded-lg text-xs px-2 bg-white text-gray-700 font-semibold focus:outline-none h-[32px] md:h-[28px] w-full md:w-auto"
             >
-              <option value="">All Times</option>
               {durationOptions.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
 
             {/* Category */}
             <select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className="border border-gray-300 rounded-lg text-xs px-2 py-0.5 bg-white text-gray-750 font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500 h-[28px]"
+              value={inlineCat}
+              onChange={(e) => setInlineCat(e.target.value)}
+              className="border border-gray-300 rounded-lg text-xs px-2 bg-white text-gray-700 font-semibold focus:outline-none h-[32px] md:h-[28px] w-full md:w-auto"
             >
-              <option value="">All Categories</option>
+              <option value="" disabled>Select Category</option>
               {customCategories.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
 
-            {/* Clear */}
-            {(searchQuery || filterDuration || filterCategory || filterFromDate || filterToDate) && (
-              <button
-                onClick={() => { setSearchQuery(''); setFilterDuration(''); setFilterCategory(''); setFilterFromDate(''); setFilterToDate(''); }}
-                className="text-[10px] text-red-500 hover:text-red-700 font-bold hover:underline"
-              >Clear</button>
-            )}
-          </div>
+            {/* Add Task Button */}
+            <div className="flex items-center gap-1.5 w-full md:w-auto shrink-0 justify-end md:justify-start">
+              <button 
+                onClick={handleInlineAddTask}
+                disabled={!inlineDesc.trim() || !inlineDate}
+                className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white rounded-lg flex items-center justify-center px-3 h-[32px] md:h-[28px] text-[11px] font-bold shadow-sm transition active:scale-95 whitespace-nowrap flex-1 md:flex-none"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" /> Add Task
+              </button>
 
-          {/* Actions */}
-          <div className="flex items-center gap-2 shrink-0">
-            <button onClick={handleSaveAll} className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center justify-center px-3.5 py-1 text-xs font-bold shadow-sm transition active:scale-95 h-[28px]">Save</button>
-            <button onClick={handleAddTaskClick} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center justify-center px-3.5 py-1 text-xs font-semibold shadow-sm transition active:scale-95 h-[28px]">Add Task</button>
+              {/* Save All to All Tasks Button */}
+              <button 
+                onClick={handleSaveAllToMaster}
+                disabled={tasks.length === 0}
+                className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white rounded-lg flex items-center justify-center px-3 h-[32px] md:h-[28px] text-[11px] font-bold shadow-sm transition active:scale-95 whitespace-nowrap"
+              >
+                Save to All Tasks
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-hidden flex flex-col min-h-0 pt-1">
+        <div className="flex-1 overflow-hidden flex flex-col min-h-0">
           <DataTable
             headers={headers}
             data={paginatedTasks}

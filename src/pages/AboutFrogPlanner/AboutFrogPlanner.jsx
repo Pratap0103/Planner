@@ -19,10 +19,11 @@ const AboutFrogPlanner = () => {
   ];
 
   return (
-    <div className="p-4 md:p-6 space-y-5 bg-white max-w-4xl mx-auto overflow-y-auto scrollbar-hide">
+    <div className="h-full overflow-y-auto bg-white scrollbar-hide">
+      <div className="p-4 md:p-6 space-y-5">
 
       {/* ── Hero Banner ── */}
-      <div className="relative bg-gradient-to-br from-green-600 to-green-800 rounded-2xl p-6 overflow-hidden shadow-lg">
+      <div className="relative bg-gradient-to-br from-green-600 to-green-800 rounded-2xl p-6 lg:p-8 overflow-hidden shadow-lg">
         <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/10 pointer-events-none">
           <span className="text-[120px] leading-none select-none">🐸</span>
         </div>
@@ -48,7 +49,7 @@ const AboutFrogPlanner = () => {
         <p className="text-xs text-gray-500 font-medium leading-relaxed">
           Frog Planner is designed to help <span className="font-bold text-green-700">individuals and teams</span> focus on what truly matters — transforming daily work into meaningful progress.
         </p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
           {[
             { emoji: '👨‍💼', label: 'Business Owner' },
             { emoji: '👨‍💻', label: 'Professional' },
@@ -66,9 +67,9 @@ const AboutFrogPlanner = () => {
       </div>
 
       {/* ── Why We Built This + What is Frog Task ── */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 lg:grid-cols-3 gap-4">
         {/* Why */}
-        <div className="md:col-span-3 bg-white rounded-2xl border border-green-100 shadow-sm p-5 flex flex-col gap-3">
+        <div className="md:col-span-3 lg:col-span-2 bg-white rounded-2xl border border-green-100 shadow-sm p-5 flex flex-col gap-3">
           <h2 className="text-sm font-extrabold text-gray-800 flex items-center gap-2">
             <Milestone className="text-green-600" size={17} />
             Why We Built This System
@@ -82,7 +83,7 @@ const AboutFrogPlanner = () => {
         </div>
 
         {/* What is Frog Task */}
-        <div className="md:col-span-2 bg-green-50/60 rounded-2xl border border-green-100 shadow-sm p-5 space-y-3">
+        <div className="md:col-span-2 lg:col-span-1 bg-green-50/60 rounded-2xl border border-green-100 shadow-sm p-5 space-y-3">
           <h2 className="text-sm font-extrabold text-gray-800 flex items-center gap-2">
             <HelpCircle className="text-green-600" size={17} />
             What is a Frog Task?
@@ -109,7 +110,7 @@ const AboutFrogPlanner = () => {
       </div>
 
       {/* ── Examples Comparison ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
         <div className="bg-rose-50 rounded-2xl border border-rose-100 p-4 space-y-3 shadow-sm">
           <span className="inline-block text-[11px] font-extrabold text-rose-700 bg-white px-3 py-1 rounded-full border border-rose-200 shadow-sm">
             ❌ Avoid First (Distractions)
@@ -156,7 +157,7 @@ const AboutFrogPlanner = () => {
           <Award className="text-yellow-500" size={17} />
           Five Rules of Frog Productivity
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-3">
           {rules.map((rule) => (
             <div key={rule.num} className="bg-white p-4 rounded-2xl border border-green-100 shadow-sm flex flex-col gap-2 hover:border-green-300 hover:shadow-md transition-all duration-200">
               <div className="flex items-center gap-2">
@@ -178,7 +179,7 @@ const AboutFrogPlanner = () => {
           <Play className="text-green-600" size={16} />
           Your Daily Frog Flow
         </h2>
-        <div className="space-y-2">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
           {steps.map((st, i) => (
             <div key={st.step} className="flex gap-4 items-start bg-white rounded-2xl border border-green-100 p-4 shadow-sm hover:border-green-300 transition-all duration-150">
               <div className="w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center text-sm font-black flex-shrink-0 shadow">
@@ -197,13 +198,14 @@ const AboutFrogPlanner = () => {
       </div>
 
       {/* ── How It Works (6-step detailed) ── */}
-      <div className="bg-white rounded-2xl border border-green-100 shadow-sm p-5 space-y-0">
+      <div className="bg-white rounded-2xl border border-green-100 shadow-sm p-5">
         <div className="mb-5">
           <h2 className="text-xl font-black text-gray-900">How It Works</h2>
           <p className="text-xs text-gray-500 font-medium mt-1 leading-relaxed">
             A simple 6-step daily system that helps you focus on what matters most — starting with your most important task every single day.
           </p>
         </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 lg:gap-4">
 
         {[
           {
@@ -281,6 +283,7 @@ const AboutFrogPlanner = () => {
             {idx < arr.length - 1 && <hr className="border-gray-100" />}
           </div>
         ))}
+        </div>
       </div>
 
       {/* ── What You May Notice Within Just One Week ── */}
@@ -295,7 +298,7 @@ const AboutFrogPlanner = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
           {[
             'Better focus during work',
             'Less confusion about what to do next',
@@ -335,6 +338,7 @@ const AboutFrogPlanner = () => {
         <p className="text-[11px] text-amber-600 font-extrabold pt-1">🐸 Eat the Frog. Every. Single. Day.</p>
       </div>
 
+      </div>
     </div>
   );
 };

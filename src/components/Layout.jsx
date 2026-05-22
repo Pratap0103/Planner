@@ -12,6 +12,18 @@ const Layout = () => {
   const handleToggleCollapse = (collapsed) => {
     setIsCollapsed(collapsed);
     localStorage.setItem('sidebar_collapsed', collapsed ? 'true' : 'false');
+    
+    // Smoothly dispatch window resize events over 350ms to force Recharts & tables to recalculate their layout
+    let elapsed = 0;
+    const interval = setInterval(() => {
+      window.dispatchEvent(new Event('resize'));
+      elapsed += 16;
+      if (elapsed >= 350) {
+        clearInterval(interval);
+        // Dispatch one final event to ensure absolute correctness
+        window.dispatchEvent(new Event('resize'));
+      }
+    }, 16);
   };
 
   const userString = localStorage.getItem('user');

@@ -14,9 +14,9 @@ const Login = () => {
   const [showAbout, setShowAbout] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
 
-  // Sign In state
-  const [id, setId] = useState('');
-  const [password, setPassword] = useState('');
+  // Sign In state (Pre-filled with Admin credentials)
+  const [id, setId] = useState('admin');
+  const [password, setPassword] = useState('admin123');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -208,11 +208,7 @@ const Login = () => {
                 </div>
               </div>
 
-              {/* Demo hint */}
-              <div className="bg-green-50 border border-green-200 rounded-xl px-3 py-2.5 text-[11px] text-green-800 font-semibold flex items-center gap-1.5">
-                <BadgeCheck size={13} className="flex-shrink-0 text-green-600" />
-                Demo — ID: <strong>admin</strong> &nbsp;/&nbsp; Password: <strong>admin123</strong>
-              </div>
+
 
               {/* Sign In Button */}
               <button type="submit" disabled={submitting}

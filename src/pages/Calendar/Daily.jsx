@@ -1,5 +1,13 @@
 import React from 'react';
-import { Clock, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
+
+const getTimeIcon = (time) => {
+  if (time === 'Morning') return '🌅';
+  if (time === 'Afternoon') return '☀️';
+  if (time === 'Evening') return '🌆';
+  if (time === 'Night') return '🌙';
+  return '⏰';
+};
 
 export default function Daily({ events, onToggleStatus }) {
   return (
@@ -31,7 +39,7 @@ export default function Daily({ events, onToggleStatus }) {
                      <div className="flex-1 text-left">
                        <div className="flex items-center gap-3 mb-2">
                          <span className="text-xs font-semibold opacity-75 flex items-center gap-1.5">
-                           <Clock size={14} strokeWidth={2} />
+                           <span className="text-sm leading-none select-none">{getTimeIcon(evt.time)}</span>
                            {evt.time}
                          </span>
                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${badgeColors}`}>

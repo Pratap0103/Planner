@@ -315,51 +315,58 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── Date Navigator + Range Switcher ── */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm flex-shrink-0">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+      {/* ── Date Navigator + Range Switcher (True Single Row) ── */}
+      <div className="bg-white border border-gray-200 rounded-2xl px-3 py-2 shadow-sm flex-shrink-0">
 
-          {/* Week nav */}
-          <div className="flex items-center gap-2">
-            <button onClick={() => navWeek(-1)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 border border-gray-200 transition">
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <div className="text-left">
-              <p className="text-sm font-extrabold text-gray-800">
-                {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-              </p>
-              {selectedDateStr === getTodayStr() ? (
-                <span className="text-[9px] bg-blue-50 text-blue-700 border border-blue-100 px-1.5 py-0.5 rounded font-extrabold uppercase tracking-wide">Today</span>
-              ) : (
-                <button onClick={() => setSelectedDate(new Date())} className="text-[9px] text-blue-600 font-extrabold uppercase tracking-wide hover:underline">Back to Today</button>
-              )}
-            </div>
-            <button onClick={() => navWeek(1)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 border border-gray-200 transition">
-              <ChevronRight className="w-4 h-4" />
-            </button>
+        {/* Single row — no wrapping ever */}
+        <div className="flex items-center gap-2 overflow-hidden">
+
+          {/* Prev week */}
+          <button onClick={() => navWeek(-1)} className="p-1 rounded-lg hover:bg-gray-100 text-gray-500 border border-gray-200 transition flex-shrink-0">
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          {/* Date label + Today badge inline */}
+          <div className="flex items-center gap-1.5 min-w-0 flex-shrink-0">
+            <span className="text-xs font-extrabold text-gray-800 whitespace-nowrap">
+              {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            </span>
+            {selectedDateStr === getTodayStr() ? (
+              <span className="text-[9px] bg-blue-50 text-blue-700 border border-blue-100 px-1.5 py-0.5 rounded font-extrabold uppercase tracking-wide whitespace-nowrap flex-shrink-0">Today</span>
+            ) : (
+              <button onClick={() => setSelectedDate(new Date())} className="text-[9px] text-blue-600 font-extrabold uppercase tracking-wide hover:underline whitespace-nowrap flex-shrink-0">↩ Today</button>
+            )}
           </div>
 
-          {/* Controls */}
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex bg-gray-100 rounded-lg p-1">
-              {['Today', 'Weekly', 'Monthly'].map((r) => (
-                <button key={r} onClick={() => setTimeRange(r)}
-                  className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${timeRange === r ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}>
-                  {r}
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center gap-1.5 bg-white border border-gray-300 rounded-lg px-2 py-1 h-[30px]">
-              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Date:</span>
-              <input type="date" value={selectedDateStr}
-                onChange={(e) => setSelectedDate(new Date(e.target.value))}
-                className="bg-transparent border-none text-xs font-bold text-indigo-600 focus:outline-none cursor-pointer" />
-            </div>
+          {/* Next week */}
+          <button onClick={() => navWeek(1)} className="p-1 rounded-lg hover:bg-gray-100 text-gray-500 border border-gray-200 transition flex-shrink-0">
+            <ChevronRight className="w-4 h-4" />
+          </button>
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Today / Weekly / Monthly toggle */}
+          <div className="flex bg-gray-100 rounded-lg p-0.5 flex-shrink-0">
+            {['Today', 'Weekly', 'Monthly'].map((r) => (
+              <button key={r} onClick={() => setTimeRange(r)}
+                className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all whitespace-nowrap ${timeRange === r ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}>
+                {r}
+              </button>
+            ))}
+          </div>
+
+          {/* Date picker */}
+          <div className="flex items-center gap-1 bg-white border border-gray-300 rounded-lg px-2 h-[28px] flex-shrink-0">
+            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">Date:</span>
+            <input type="date" value={selectedDateStr}
+              onChange={(e) => setSelectedDate(new Date(e.target.value))}
+              className="bg-transparent border-none text-xs font-bold text-indigo-600 focus:outline-none cursor-pointer w-[110px]" />
           </div>
         </div>
 
-        {/* Week Quick Nav */}
-        <div className="grid grid-cols-7 gap-1.5 pt-3 border-t border-gray-100">
+        {/* 7-Day Week Quick Nav */}
+        <div className="grid grid-cols-7 gap-1.5 pt-2.5 mt-2.5 border-t border-gray-100">
           {weekDates.map((d) => {
             const ds = formatDateObj(d);
             const isSelected = ds === selectedDateStr;
@@ -367,14 +374,14 @@ export default function Dashboard() {
             const cnt = tasks.filter(t => !t.date || t.date === ds).length;
             return (
               <button key={ds} onClick={() => setSelectedDate(new Date(d))}
-                className={`py-2 rounded-xl text-center transition-all border ${
+                className={`py-1.5 rounded-xl text-center transition-all border ${
                   isCurrentToday
                     ? isSelected ? 'bg-blue-600 border-blue-700 text-white shadow-md scale-105' : 'bg-blue-500 border-blue-500 text-white hover:bg-blue-600'
                     : isSelected ? 'bg-sky-100 border-sky-300 text-sky-700 font-bold' : 'bg-sky-50/40 border-sky-100 text-sky-500/80 hover:bg-sky-100/30'
                 }`}>
                 <p className="text-[9px] font-bold uppercase tracking-tight opacity-80">{d.toLocaleDateString('en-US', { weekday: 'short' })}</p>
                 <p className="text-xs font-extrabold mt-0.5">{d.getDate()}</p>
-                {cnt > 0 && <div className={`mx-auto mt-1 w-1.5 h-1.5 rounded-full ${isSelected || isCurrentToday ? 'bg-white' : 'bg-sky-500 animate-pulse'}`} />}
+                {cnt > 0 && <div className={`mx-auto mt-0.5 w-1.5 h-1.5 rounded-full ${isSelected || isCurrentToday ? 'bg-white' : 'bg-sky-500 animate-pulse'}`} />}
               </button>
             );
           })}
@@ -405,8 +412,24 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ── KPI Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 flex-shrink-0">
+      {/* ── KPI Cards — single scrollable row on mobile, grid on desktop ── */}
+      {/* Mobile: horizontal scroll row */}
+      <div className="flex gap-2 overflow-x-auto pb-0.5 flex-shrink-0 md:hidden scrollbar-hide">
+        {kpiCards.map((kpi) => (
+          <div key={kpi.label} className="bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-sm flex-shrink-0 flex items-center gap-2 min-w-[110px]">
+            <div className={`w-6 h-6 rounded-lg flex items-center justify-center border flex-shrink-0 ${kpi.bg}`}>
+              <kpi.icon className="w-3 h-3" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-base font-extrabold text-gray-800 leading-none">{kpi.value}</p>
+              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wide leading-tight mt-0.5 whitespace-nowrap">{kpi.label}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop: standard 4-col grid */}
+      <div className="hidden md:grid grid-cols-4 gap-3 flex-shrink-0">
         {kpiCards.map((kpi) => (
           <div key={kpi.label} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all text-left">
             <div className="flex items-center justify-between mb-3">
@@ -417,7 +440,6 @@ export default function Dashboard() {
             </div>
             <p className="text-2xl font-extrabold text-gray-800">{kpi.value}</p>
             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">{kpi.label}</p>
-            {/* Thin progress bar */}
             <div className="h-1 bg-gray-100 rounded-full mt-3 overflow-hidden">
               <div className="h-full bg-gradient-to-r from-indigo-400 to-indigo-600 rounded-full transition-all duration-500"
                 style={{ width: `${totalCount > 0 ? Math.round((kpi.value / totalCount) * 100) : 0}%` }} />

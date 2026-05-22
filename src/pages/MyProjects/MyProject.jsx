@@ -81,26 +81,29 @@ const MyProject = () => {
     <div className="p-4 md:p-6 space-y-5 flex flex-col h-full min-h-0 bg-white">
 
       {/* Creation form — full width */}
-      <div className="bg-gradient-to-r from-slate-50 to-indigo-50/20 p-4 rounded-xl border border-gray-200 shadow-sm flex-shrink-0">
-        <form onSubmit={handleCreateProject} className="flex gap-2.5 items-center">
-          <div className="relative flex-1">
-            <input
-              type="text"
-              placeholder="Enter project name..."
-              value={newProjectName}
-              onChange={(e) => setNewProjectName(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-white font-semibold h-[38px] shadow-sm transition-all"
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center justify-center px-4 py-2 text-xs font-semibold shadow-sm transition active:scale-95 duration-100 h-[38px] gap-1.5 shrink-0"
-          >
-            <FolderPlus size={16} />
-            Create Project
-          </button>
-        </form>
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col shrink-0 overflow-hidden">
+        <div className="bg-indigo-50/20 border-b border-gray-100">
+          <form onSubmit={handleCreateProject} className="px-3 py-2 flex flex-wrap sm:flex-nowrap gap-2 items-center">
+            <div className="relative flex-1 min-w-[200px]">
+              <FolderPlus className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Enter new project name..."
+                value={newProjectName}
+                onChange={(e) => setNewProjectName(e.target.value)}
+                className="w-full pl-9 pr-3 border border-gray-300 rounded-lg text-xs md:text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white font-semibold h-[34px] shadow-sm transition-all"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg flex items-center justify-center px-4 h-[34px] text-xs font-bold shadow-sm transition active:scale-95 whitespace-nowrap shrink-0 w-full sm:w-auto"
+            >
+              <Plus className="w-4 h-4 mr-1.5" />
+              Create Project
+            </button>
+          </form>
+        </div>
       </div>
 
       {/* Projects Grid List */}
